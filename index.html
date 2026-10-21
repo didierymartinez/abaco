@@ -66,7 +66,7 @@
       </div>
 
       <nav class="tiles">
-        <button class="tile" data-go="calligraphy" type="button"><span>✏️</span>Escribir números</button>
+        <button class="tile" id="tile-caligrafia" type="button"><span>✏️</span>Hojas de caligrafía</button>
         <button class="tile" data-go="route" type="button"><span>🗺️</span>Mi camino</button>
         <button class="tile" data-go="learn" type="button"><span>🧮</span>Aprende</button>
         <button class="tile" data-go="print" type="button"><span>🖨️</span>Imprimir</button>
@@ -90,19 +90,29 @@
             <p class="bubble" id="bubble" role="status" aria-live="polite"></p>
           </div>
 
+          <ol class="phases" id="session-phases" aria-label="Pasos de la lección">
+            <li data-phase="mira">👀 Mira</li>
+            <li data-phase="juntos">🤝 Juntos</li>
+            <li data-phase="tu">⭐ Tú</li>
+          </ol>
+
           <div class="stage-body" id="briefing">
             <h2 id="briefing-level"></h2>
             <ul class="concepts" id="briefing-concepts"></ul>
-            <button class="btn btn-go btn-xl" id="briefing-go" type="button">¡Vamos!</button>
+            <p class="why" id="briefing-plan"></p>
+            <div class="row center">
+              <button class="btn btn-go btn-xl" id="briefing-go" type="button">¡Vamos!</button>
+              <button class="btn btn-soft" id="briefing-lesson" type="button" hidden>👀 Ver la lección otra vez</button>
+            </div>
           </div>
 
-          <div class="stage-body" id="warmup" hidden>
-            <p class="eyebrow">Calentamiento · escribe el número</p>
-            <div class="tracer-box" id="warmup-tracer"></div>
+          <div class="stage-body" id="lesson" hidden>
+            <p class="lesson-expr" id="lesson-expr"></p>
+            <div class="exercise-abacus" id="lesson-abacus"></div>
+            <p class="lesson-count" id="lesson-count"></p>
             <div class="row center">
-              <button class="round-btn" id="warmup-demo" type="button" aria-label="Ver cómo se escribe">👀</button>
-              <button class="round-btn" id="warmup-clear" type="button" aria-label="Borrar">↺</button>
-              <button class="btn btn-soft" id="warmup-skip" type="button">Saltar</button>
+              <button class="btn btn-soft" id="lesson-prev" type="button">◀ Atrás</button>
+              <button class="btn btn-go btn-xl" id="lesson-next" type="button">Siguiente ▶</button>
             </div>
           </div>
 
@@ -188,32 +198,6 @@
         <ol class="paper-list" id="paper-list"></ol>
         <p class="paper-score" id="paper-score"></p>
         <button class="btn btn-go" id="paper-save" type="button">Guardar</button>
-      </div>
-    </section>
-
-    <!-- Escribir números -->
-    <section class="view" id="view-calligraphy" hidden>
-      <div class="view-head">
-        <button class="round-btn" data-go="home" type="button" aria-label="Volver">←</button>
-        <h1>Escribir números</h1>
-      </div>
-      <div class="guide">
-        <div class="mascot" aria-hidden="true">🦝</div>
-        <p class="bubble" id="cal-bubble"></p>
-      </div>
-      <div class="cal-layout">
-        <div class="panel">
-          <div class="digit-picker" id="cal-digits"></div>
-        </div>
-        <div class="panel cal-practice">
-          <div class="cal-rounds" id="cal-rounds"></div>
-          <div class="tracer-box" id="cal-tracer"></div>
-          <div class="row center">
-            <button class="round-btn" id="cal-demo" type="button" aria-label="Ver cómo se escribe">👀</button>
-            <button class="round-btn" id="cal-clear" type="button" aria-label="Borrar">↺</button>
-            <button class="btn btn-soft" id="cal-print" type="button">🖨️ Hoja de este número</button>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -354,7 +338,6 @@
             </label>
           </div>
           <label class="check"><input type="checkbox" id="set-voice"> Mapi habla (voz)</label>
-          <label class="check"><input type="checkbox" id="set-warmup"> Calentamiento de caligrafía al empezar la sesión</label>
           <label class="check"><input type="checkbox" id="set-sound"> Sonidos</label>
           <label class="check"><input type="checkbox" id="set-rtl"> Con teclado, en sumas en columna, escribir la respuesta de derecha a izquierda (unidades primero)</label>
           <label class="check"><input type="checkbox" id="set-labels"> Mostrar U, D, C debajo del ábaco</label>

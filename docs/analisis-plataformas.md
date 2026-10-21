@@ -96,42 +96,49 @@ No adoptamos el temporizador con cuenta regresiva por ronda: a los 7 años prefe
 - **Las cuentas se hacen en un ábaco real y con lápiz.** La pantalla guía, cronometra y corrige.
 - **Caligrafía de los números** como objetivo explícito, al estilo de las hojas Kumon 4A de trazado.
 
-## 6. Lo que implementa Mi Ábaco
+## 6. Rediseño v3: aprendizaje evolutivo
 
-- **Inicio:** Mapi saluda; la racha se muestra como cuentas en una varilla con los 7 días; hay un botón grande para jugar, la hoja en papel y cuatro accesos.
-- **Sesión diaria** (10 ejercicios por defecto), en una sola pantalla sin desplazarse:
-  1. Mapi presenta el nivel con voz, con 3 recordatorios del módulo.
-  2. **Calentamiento de caligrafía:** el número del día (el que tiene menos estrellas) se escribe una vez con camino y otra sin ayuda.
-  3. **Ejercicios con el ábaco real:** ella calcula en su ábaco y escribe el resultado en un teclado grande. En «Pon el número» compara su ábaco con la imagen y responde «¿Se ve así?».
-  4. Dos intentos, con una pista del nivel tras el primer fallo. Después, **«Ver cómo se hace»** anima la solución en el ábaco en pantalla y Mapi la explica con voz.
-  5. Si no hay ábaco real, los padres pueden cambiar a «ábaco en pantalla»: las cuentas se tocan o se deslizan, con zonas de toque grandes.
-- **Hoja en papel:** imprimir la hoja del día, cronómetro grande «▶ / ¡Terminé!» y corrección tocando las respuestas equivocadas. Cuenta para la racha y para el avance de nivel.
-- **Escribir números:** los 10 números con orden de trazo, punto de inicio y flecha. Tres rondas (con camino, con puntos, sin ayuda); la puntuación revisa la forma, el orden y la dirección de los trazos.
-- **Imprimir:** hojas del nivel (las del día coinciden con la sesión) con una fila de caligrafía arriba, hoja de respuestas, y hojas de caligrafía de todos los números o de uno solo, con el modelo, puntos que se van desvaneciendo y casillas para escribir solo.
-- **Mi camino, Aprende y Padres**, como en la versión anterior, más los ajustes nuevos: tipo de ábaco, voz y calentamiento.
-- **App instalable:** manifiesto, íconos y *service worker* para usarla sin conexión.
+Al probarla con la niña aparecieron dos problemas:
 
-### Niveles
+1. **Las lecciones no eran evolutivas.** Empezaba leyendo números sin haber enseñado a contar, y pedía resolver sin mostrar antes cómo se hace.
+2. **Escribir números en el celular no aportaba.** La caligrafía se practica mejor con lápiz.
 
-| Código | Contenido |
+**Principio adoptado: «yo lo hago, lo hacemos juntos, tú lo haces»** (liberación gradual de la responsabilidad):
+- **👀 Mira:** Mapi enseña el concepto con tarjetas en el ábaco y resuelve ejemplos paso a paso, con voz.
+- **🤝 Juntos:** 3 ejercicios guiados. Mapi dice cada movimiento, ella lo hace en su ábaco real, compara con la pantalla y toca «Hecho».
+- **⭐ Tú:** práctica sin ayuda, con una pista tras el primer error y la solución paso a paso tras el segundo. Solo esta parte cuenta para el avance.
+
+La primera vez en un nivel se hacen los tres pasos. Las siguientes sesiones van directo a «Tú», con la opción «Ver la lección otra vez».
+
+**La ruta empieza desde cero** (25 niveles en 8 módulos):
+
+| Módulo | Niveles |
 |---|---|
-| A1–A3 | Leer y poner números (0–9, hasta 99, hasta 999) |
-| B1–B2 | Sumas y restas directas de 1 cifra |
-| B3–B4 | Amigos del 5 (sumas y restas) |
-| C1–C3 | Amigos del 10 (llevar y pedir prestado), mezcla |
-| D1–D3 | 2 cifras (sin llevar, llevando, restas) |
-| E1–E2 | 3 cifras (como la hoja Kumon B91a) |
-| F1–F2 | Listas de 4 números (1 y 2 cifras) |
-| G1–G2 | Anzan: flash de 3 y 5 números |
+| 1. Conozco el ábaco | A1 Partes del ábaco · A2 Contar del 1 al 4 · A3 El 5 (cuenta del cielo) · A4 Del 6 al 9 · A5 Contar del 0 al 9 (antes y después) · A6 El 10 y las decenas · A7 Hasta el 99 · A8 Hasta el 999 |
+| 2. Sumas y restas directas | B1 Sumar con cuentas de tierra · B2 Sumar 5 o más · B3 Restas directas |
+| 3. Amigos del 5 | C1 Sumas · C2 Restas |
+| 4. Amigos del 10 | D1 Sumas que llevan · D2 Restas que piden prestado · D3 Mezcladas |
+| 5. Dos cifras | E1 Sin llevar · E2 Llevando · E3 Restas |
+| 6. Tres cifras | F1 Sumas · F2 Restas |
+| 7. Listas de soroban | G1 De 1 cifra · G2 De 2 cifras |
+| 8. Anzan | H1 Flash de 3 · H2 Flash de 5 |
 
-Los generadores revisan qué movimiento pide cada varilla (directo, amigo del 5 o amigo del 10). Así, por ejemplo, un nivel de «sumas directas» nunca incluye un ejercicio que necesite amigos.
+**Tipos de ejercicio:**
+- *Preguntas de comprensión* con tres opciones (por ejemplo, «¿Cuánto vale la cuenta del cielo?»).
+- *Poner* un número en el ábaco real y compararlo con la imagen.
+- *Contar* uno más o uno menos («6 → ?»).
+- *Leer* el ábaco.
+- *Cálculos*.
+- *Flash anzan*.
+
+**Caligrafía solo en papel:** se quitó el trazado en pantalla. Quedan las hojas de caligrafía y una fila de caligrafía en cada hoja diaria. En las hojas de contar, la respuesta se escribe a mano («6 → __»).
 
 ## 7. Ideas para siguientes versiones
 
 - **Evaluación inicial** al estilo Smartick o la «recomendación» de Supercerebros, para elegir el nivel de inicio automáticamente.
 - **Adaptación dentro de la sesión**: si falla dos seguidos, intercalar un ejercicio del nivel anterior.
 - **Recordatorio diario** («¡Hora del ábaco!»), empaquetando la app con Capacitor.
-- **Dictado de números:** Mapi dice un número y ella lo escribe con el dedo, para unir caligrafía y lectura de números.
+- **Dictado de números en papel:** Mapi dice números en voz alta y ella los escribe en una hoja de dictado impresa.
 - **Varios perfiles**, por ejemplo para hermanos.
 - **Sincronizar el progreso** entre dispositivos (hoy se guarda en el navegador y se pasa con exportar e importar).
 - **Multiplicación y división** en el soroban.

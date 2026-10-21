@@ -4,13 +4,18 @@ Una app para que una niña practique a diario con el ábaco soroban y mejore la 
 
 Los cálculos se hacen **en un ábaco real y con lápiz**. La app hace de guía: Mapi, la mascota, explica con voz, cronometra, corrige y lleva la racha.
 
+Todo es **evolutivo**. La ruta empieza por conocer el ábaco y contar, y cada nivel se aprende en tres pasos:
+1. **👀 Mira:** Mapi explica el concepto y resuelve ejemplos en el ábaco, paso a paso.
+2. **🤝 Juntos:** ella hace 3 ejercicios en su ábaco siguiendo cada paso con Mapi.
+3. **⭐ Tú:** practica sin ayuda. Solo esta parte cuenta para subir de nivel.
+
 - 🔥 **Racha:** cada día practicado sube una cuenta en la varilla de la semana.
-- 🧮 **Sesión diaria:** Mapi presenta el nivel, sigue un calentamiento de caligrafía y luego 10 ejercicios. Ella los resuelve en su ábaco y escribe el resultado en un teclado grande. Si falla dos veces, ve la solución paso a paso en el ábaco en pantalla.
-- ✏️ **Hoja en papel:** se imprime la hoja del día, un cronómetro mide el tiempo mientras trabaja y al final se corrige tocando las respuestas equivocadas.
-- ✍️ **Escribir números:** traza cada número con el dedo o el mouse en tres rondas (con camino, con puntos, sin ayuda). Muestra el orden de los trazos y califica con estrellas.
-- 🖨️ **Imprimir:** hojas diarias por nivel con una fila de caligrafía y hoja de respuestas, más hojas de caligrafía de los números al estilo Kumon 4A.
+- 🧮 **Sesión diaria:** la primera vez en un nivel hace Mira → Juntos → Tú; después va directo a practicar, y puede volver a ver la lección. Resuelve en su ábaco y responde con un teclado grande, comparando su ábaco con la imagen o eligiendo entre opciones. Si falla dos veces, ve la solución paso a paso.
+- 📄 **Hoja en papel:** se imprime la hoja del día, un cronómetro mide el tiempo mientras trabaja y al final se corrige tocando las respuestas equivocadas.
+- ✏️ **Caligrafía, solo en papel:** hojas de los números al estilo Kumon 4A (modelo con orden de trazo, puntos para repasar y casillas para escribir). Cada hoja diaria empieza con una fila de caligrafía.
+- 🖨️ **Imprimir:** hojas diarias por nivel (las del día coinciden con la sesión) y hoja de respuestas.
 - 🗺️ **Mi camino:** la ruta por módulos, con progreso, estadísticas y repaso de niveles anteriores.
-- 👨‍👩‍👧 **Padres:** nivel, tipo de ábaco (real o en pantalla), voz, calentamiento, historial y copia de seguridad.
+- 👨‍👩‍👧 **Padres:** nivel, tipo de ábaco (real o en pantalla), voz, historial y copia de seguridad.
 
 Está inspirada en Kumon (hojas diarias por niveles), Smartick (sesiones cortas con respuesta inmediata) y la ruta «Soroban desde cero» de Supercerebros. El análisis está en [docs/analisis-plataformas.md](docs/analisis-plataformas.md).
 
@@ -39,10 +44,10 @@ El progreso se guarda en el dispositivo. Para pasarlo a otro, usa *Padres → Ex
 
 | Archivo | Qué contiene |
 |---|---|
-| `index.html` | Vistas: inicio, sesión, resultado, hoja en papel, escribir números, mi camino, imprimir, aprende y padres |
+| `index.html` | Vistas: inicio, sesión (Mira, Juntos, Tú), resultado, hoja en papel, mi camino, imprimir, aprende y padres |
 | `css/app.css` | Estilo «juguete de madera», diseño para celular y computador, e impresión |
-| `js/curriculum.js` | Niveles y módulos, generadores de ejercicios con semilla y explicación paso a paso |
+| `js/curriculum.js` | 25 niveles en 8 módulos con sus lecciones, generadores de ejercicios con semilla y pasos para enseñar, guiar y explicar |
 | `js/soroban.js` | Soroban en SVG: tocar o deslizar las cuentas, flechas del teclado |
-| `js/caligrafia.js` | Trazos de los números 0–9, juego de trazado con puntuación y casillas para imprimir |
+| `js/caligrafia.js` | Trazos de los números 0–9 con su orden, para las hojas de caligrafía |
 | `js/app.js` | Lógica de la app: Mapi y su voz, racha, sesión, avance de nivel, hoja en papel e impresión |
 | `manifest.webmanifest`, `sw.js`, `icons/` | App instalable y sin conexión |

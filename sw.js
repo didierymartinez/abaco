@@ -2,7 +2,7 @@
  * Ábaco – service worker: guarda la app para usarla sin conexión.
  * Al cambiar cualquier archivo de la app, sube VERSION para que se actualice.
  */
-const VERSION = 'mi-abaco-v3';
+const VERSION = 'mi-abaco-v4';
 const SHELL = [
   './',
   'index.html',

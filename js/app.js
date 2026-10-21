@@ -1,7 +1,7 @@
 /*
- * Ábaco – la aplicación: inicio con racha, sesión diaria guiada por Mapi,
- * calentamiento de caligrafía, hoja en papel con cronómetro y corrección,
- * escribir números, hojas imprimibles, sección para aprender y panel de padres.
+ * Ábaco – la aplicación: inicio con racha, sesión diaria guiada por Mapi
+ * (Mira → Juntos → Tú), hoja en papel con cronómetro y corrección,
+ * hojas imprimibles, sección para aprender y panel de padres.
  */
 (function () {
   'use strict';
@@ -13,11 +13,6 @@
   const AVATARS = ['🐼', '🦊', '🐰', '🐯', '🦄', '🐸', '🐨', '🐙'];
   const PRAISE = ['¡Muy bien!', '¡Genial!', '¡Excelente!', '¡Así se hace!', '¡Perfecto!', '¡Bravo!'];
   const WEEKDAYS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
-  const CAL_ROUNDS = [
-    { style: 'guia', label: 'Con camino' },
-    { style: 'punteado', label: 'Con puntos' },
-    { style: 'vacio', label: 'Sin ayuda' }
-  ];
 
   /* ---------- Datos guardados ---------- */
 
@@ -27,9 +22,8 @@
       avatar: '🐼',
       levelId: C.LEVELS[0].id,
       levelStart: 0,
-      settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true, warmup: true },
-      calligraphy: {},
-      warmupDate: '',
+      settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true },
+      lessons: {},
       history: []
     };
   }
@@ -41,7 +35,7 @@
       if (saved && Array.isArray(saved.history)) {
         Object.assign(data, saved);
         data.settings = Object.assign(defaults().settings, saved.settings);
-        data.calligraphy = Object.assign({}, saved.calligraphy);
+        data.lessons = Object.assign({}, saved.lessons);
       }
     } catch (e) {
       // Sin almacenamiento disponible: la app funciona igual, sin recordar.
@@ -249,7 +243,6 @@
     if (view === 'parents') renderParents();
     if (view === 'route') renderRoute();
     if (view === 'paper') renderPaper();
-    if (view === 'calligraphy') renderCalligraphy();
   }
 
   document.addEventListener('click', e => {
@@ -266,7 +259,7 @@
     const name = data.name;
     const days = n => `${n} ${n === 1 ? 'día' : 'días'} seguidos`;
     if (!name) return '¡Hola! Soy Mapi y te voy a acompañar con el ábaco. ¿Cómo te llamas?';
-    if (streak.doneToday) return `¡Ya practicaste hoy, ${name}! Llevas ${days(streak.current)}. ¿Escribimos números?`;
+    if (streak.doneToday) return `¡Ya practicaste hoy, ${name}! Llevas ${days(streak.current)}. ¿Una hoja de caligrafía?`;
     if (streak.current) return `¡Hola, ${name}! Llevas ${days(streak.current)}. ¡No rompamos la racha!`;
     return `¡Hola, ${name}! Toca el botón verde y practicamos juntos.`;
   }
@@ -346,13 +339,14 @@
   let session = null;
   let cur = null;
   let helperSoroban = null;
-  let warmupTracer = null;
+  let lessonSoroban = null;
+  let stepper = null;
   let flashToken = 0;
   let playToken = 0;
 
   const onScreen = () => data.settings.abacus === 'pantalla';
 
-  // Prepara la sesión: Mapi presenta el nivel y luego viene el calentamiento o los ejercicios.
+  // Prepara la sesión. La primera vez en un nivel se aprende: Mira → Juntos → Tú.
   function startSession(levelId) {
     const level = C.getLevel(levelId || data.levelId);
     // El primer intento del día usa la misma semilla que la hoja impresa de ese día.
@@ -366,6 +360,7 @@
       start: Date.now(),
       timer: null
     };
+    const seen = !!data.lessons[level.id];
     const mod = C.moduleOf(level.id);
     $('briefing-level').textContent = `${level.id} · ${level.name}` + (session.review ? ' (repaso)' : '');
     const concepts = $('briefing-concepts');
@@ -375,73 +370,113 @@
       li.textContent = c;
       concepts.appendChild(li);
     });
+    $('briefing-plan').textContent = seen
+      ? `Hoy practicas por tu cuenta: ${data.settings.perSession} ejercicios.`
+      : 'Primero miras, después lo hacemos juntos y al final lo intentas tú.';
+    $('briefing-go').textContent = seen ? '¡Vamos!' : '👀 Empezar la lección';
+    $('briefing-lesson').hidden = !seen;
     setStage('briefing');
     show('session');
     $('session-timer').textContent = '0:00';
     updateVoiceButton();
     renderProgress();
-    const hello = data.name ? `¡Vamos, ${data.name}! ` : '¡Vamos! ';
-    mapi('bubble', `${hello}Hoy: ${level.name}. ${level.tip}`);
+    const name = data.name ? `, ${data.name}` : '';
+    mapi('bubble', seen
+      ? `¡Vamos${name}! Hoy practicamos: ${level.name}. ${level.tip}`
+      : `¡Hola${name}! Hoy aprendemos algo nuevo: ${level.name}. Primero mira cómo se hace.`);
   }
 
   function setStage(stage) {
     $('briefing').hidden = stage !== 'briefing';
-    $('warmup').hidden = stage !== 'warmup';
+    $('lesson').hidden = stage !== 'lesson';
     $('exercise').hidden = stage !== 'exercises';
+    $('session-phases').hidden = stage !== 'lesson';
     $('keypad').hidden = true;
     $('abacus-sheet').hidden = true;
   }
 
-  $('briefing-go').addEventListener('click', () => {
-    if (data.settings.warmup && data.warmupDate !== today()) startWarmup();
-    else beginExercises();
-  });
-
-  /* --- Calentamiento de caligrafía --- */
-
-  function startWarmup() {
-    setStage('warmup');
-    const digit = K.digitOfDay(data.calligraphy, dayNumber(today()));
-    const rounds = ['guia', 'vacio'];
-    let r = 0;
-    const next = () => {
-      warmupTracer = new K.Tracer($('warmup-tracer'), {
-        digit,
-        style: rounds[r],
-        onDone: result => {
-          mapi('bubble', `${'⭐'.repeat(result.stars) || '💪'} ${result.hint}`, result.stars >= 2 ? 'ok' : 'try', result.hint);
-          if (result.stars === 0) {
-            setTimeout(() => warmupTracer && warmupTracer.clear(), 1200);
-            return;
-          }
-          if (rounds[r] === 'vacio') data.calligraphy[digit] = Math.max(data.calligraphy[digit] || 0, result.stars);
-          r++;
-          setTimeout(() => {
-            if (currentView !== 'session' || $('warmup').hidden) return;
-            if (r < rounds.length) {
-              next();
-              mapi('bubble', `Ahora sin camino: escribe el ${digit} tú, empezando en el punto verde.`);
-            } else {
-              data.warmupDate = today();
-              save();
-              beginExercises();
-            }
-          }, 1500);
-        }
-      });
-    };
-    next();
-    mapi('bubble', `Calentamiento: vamos a escribir el ${digit}. ${K.HOW[digit]}`);
-    warmupTracer.demo();
+  function setPhase(phase) {
+    const order = ['mira', 'juntos', 'tu'];
+    document.querySelectorAll('#session-phases li').forEach(li => {
+      const i = order.indexOf(li.dataset.phase);
+      li.className = li.dataset.phase === phase ? 'is-current' : i < order.indexOf(phase) ? 'is-done' : '';
+    });
   }
 
-  $('warmup-demo').addEventListener('click', () => warmupTracer && warmupTracer.demo());
-  $('warmup-clear').addEventListener('click', () => warmupTracer && warmupTracer.clear());
-  $('warmup-skip').addEventListener('click', () => {
-    data.warmupDate = today();
-    save();
-    beginExercises();
+  $('briefing-go').addEventListener('click', () => {
+    if (data.lessons[session.level.id]) beginExercises();
+    else startLesson(3);
   });
+  $('briefing-lesson').addEventListener('click', () => startLesson(2));
+
+  /* --- «Mira» y «Juntos»: pasos con el ábaco en pantalla --- */
+
+  // Muestra una lista de pasos { value, place, text, expr } uno a uno.
+  function runSteps({ phase, steps, rods, expr, label, onDone }) {
+    setStage('lesson');
+    setPhase(phase);
+    const digits = phase === 'mira';
+    if (!lessonSoroban || lessonSoroban.rods !== rods || lessonSoroban.showDigits !== digits) {
+      lessonSoroban = new window.Soroban($('lesson-abacus'), { rods, interactive: false, showDigits: digits, showLabels: data.settings.labels });
+    }
+    stepper = { phase, steps, expr, label, onDone, i: 0 };
+    showStep();
+  }
+
+  function showStep() {
+    const s = stepper.steps[stepper.i];
+    const last = stepper.i === stepper.steps.length - 1;
+    $('lesson-expr').textContent = s.expr || stepper.expr || '';
+    const hasAbacus = s.value !== undefined && s.value !== null;
+    $('lesson-abacus').hidden = !hasAbacus;
+    if (hasAbacus) {
+      lessonSoroban.setValue(s.value);
+      lessonSoroban.highlight(s.place);
+    }
+    mapi('bubble', s.text);
+    $('lesson-count').textContent = (stepper.label ? stepper.label + ' · ' : '') + `paso ${stepper.i + 1} de ${stepper.steps.length}`;
+    $('lesson-prev').disabled = stepper.i === 0;
+    $('lesson-next').textContent = stepper.phase === 'mira'
+      ? (last ? '¡Entendido! ▶' : 'Siguiente ▶')
+      : (last ? '¡Lo hicimos! ▶' : 'Hecho ✓');
+  }
+
+  $('lesson-prev').addEventListener('click', () => {
+    if (stepper && stepper.i > 0) { stepper.i--; showStep(); }
+  });
+  $('lesson-next').addEventListener('click', () => {
+    if (!stepper) return;
+    if (stepper.i < stepper.steps.length - 1) { stepper.i++; showStep(); return; }
+    const done = stepper.onDone;
+    stepper = null;
+    done();
+  });
+
+  // «Mira»: Mapi enseña el concepto y resuelve ejemplos.
+  function startLesson(guided) {
+    const { steps, rods } = C.lessonSteps(session.level.id);
+    runSteps({ phase: 'mira', steps, rods, onDone: () => startGuided(guided) });
+  }
+
+  // «Juntos»: ella sigue cada paso en su ábaco y toca «Hecho».
+  function startGuided(count) {
+    const list = C.buildSheet(session.level.id, `${today()}|${session.level.id}|juntos`, count);
+    let k = 0;
+    const next = () => {
+      if (k >= list.length) {
+        data.lessons[session.level.id] = today();
+        save();
+        beginExercises();
+        return;
+      }
+      const ex = list[k++];
+      const steps = C.guidedSteps(ex).map((s, i) => i === 0 && ex.type !== 'opciones' && ex.type !== 'leer'
+        ? Object.assign({}, s, { text: 'Hazlo conmigo en tu ábaco. ' + s.text })
+        : s);
+      runSteps({ phase: 'juntos', steps, rods: ex.rods, expr: C.exprText(ex), label: `Ejercicio ${k} de ${list.length}`, onDone: next });
+    };
+    next();
+  }
 
   function beginExercises() {
     session.start = Date.now();
@@ -449,6 +484,7 @@
     session.timer = setInterval(updateTimer, 1000);
     updateTimer();
     setStage('exercises');
+    setPhase('tu');
     loadExercise();
   }
 
@@ -484,15 +520,36 @@
     playToken++;
     // Con ábaco en pantalla, «poner» y los cálculos se responden moviendo las cuentas.
     const useAbacus = onScreen() && (ex.type === 'poner' || ex.type === 'calculo');
+    const typed = !useAbacus && ex.type !== 'poner' && ex.type !== 'opciones';
     cur = { ex, attempts: 0, answer: '', done: false, boxes: 0, rtl: false, soroban: null, locked: false, useAbacus };
     $('exercise-actions').innerHTML = '';
     $('abacus-sheet').hidden = true;
     const body = $('exercise-body');
     body.innerHTML = '';
-    $('keypad').hidden = useAbacus || ex.type === 'poner';
+    $('keypad').hidden = !typed;
     renderProgress();
 
-    if (ex.type === 'leer') {
+    if (ex.type === 'opciones') {
+      // La pregunta la dice Mapi en su globo; aquí van la imagen y las opciones.
+      if (ex.value !== undefined) {
+        const holder = document.createElement('div');
+        holder.className = 'exercise-abacus';
+        body.appendChild(holder);
+        new window.Soroban(holder, { rods: ex.rods, value: ex.value, interactive: false, showLabels: data.settings.labels });
+      }
+      const options = document.createElement('div');
+      options.className = 'options' + (ex.options.some(o => o.length > 6) ? ' is-long' : '');
+      ex.options.forEach(opt => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'option';
+        b.textContent = opt;
+        b.addEventListener('click', () => chooseOption(opt, b));
+        options.appendChild(b);
+      });
+      body.appendChild(options);
+      mapi('bubble', ex.question);
+    } else if (ex.type === 'leer') {
       const holder = document.createElement('div');
       holder.className = 'exercise-abacus';
       body.appendChild(holder);
@@ -501,13 +558,16 @@
       body.appendChild(answerRow());
       mapi('bubble', '¿Qué número muestra el ábaco?');
     } else if (ex.type === 'poner') {
-      body.appendChild(textSpan(String(ex.value), 'target-number'));
+      const counting = ex.from !== undefined;
+      body.appendChild(textSpan(counting ? C.exprText(ex) : String(ex.value), 'target-number'));
+      const what = counting ? C.sayCount(ex) : ex.value === 0 ? 'el 0: deja el ábaco limpio' : `el ${ex.value}`;
       if (useAbacus) {
         addAbacusAnswer(body, ex);
-        mapi('bubble', 'Pon este número en el ábaco y toca «¡Listo!».', null, `Pon el ${ex.value} en el ábaco.`);
+        if (counting) cur.soroban.setValue(ex.from);
+        mapi('bubble', counting ? `Pon ${what} y toca «¡Listo!».` : 'Pon este número en el ábaco y toca «¡Listo!».', null, `Pon ${what} en el ábaco.`);
       } else {
         addAction('¡Listo! ✓', 'btn-go btn-xl', showSelfCheck);
-        mapi('bubble', 'Pon este número en tu ábaco y toca «¡Listo!».', null, `Pon el ${ex.value} en tu ábaco.`);
+        mapi('bubble', `Pon ${what} en tu ábaco y toca «¡Listo!».`);
       }
     } else if (ex.type === 'flash') {
       const stage = document.createElement('div');
@@ -577,7 +637,30 @@
     $('exercise-actions').innerHTML = '';
     addAction('Sí, igualito ✓', 'btn-go', () => selfCheck(true));
     addAction('No, lo arreglo', 'btn-soft', () => selfCheck(false));
-    mapi('bubble', '¿Tu ábaco se ve así?');
+    mapi('bubble', ex.from !== undefined ? `Es el ${ex.value}. ¿Tu ábaco se ve así?` : '¿Tu ábaco se ve así?');
+  }
+
+  // Preguntas de opción múltiple: dos intentos, como los demás ejercicios.
+  function chooseOption(opt, button) {
+    if (!cur || cur.done) return;
+    if (opt === cur.ex.answer) {
+      button.classList.add('is-right');
+      markCorrect();
+      return;
+    }
+    cur.attempts++;
+    soundTry();
+    button.classList.add('is-wrong');
+    button.disabled = true;
+    if (cur.attempts < 2) {
+      mapi('bubble', 'Casi… ' + cur.ex.hint, 'try');
+      return;
+    }
+    document.querySelectorAll('#exercise-body .option').forEach(b => {
+      b.disabled = true;
+      if (b.textContent === cur.ex.answer) b.classList.add('is-right');
+    });
+    reveal(`La respuesta es: ${cur.ex.answer}. ${cur.ex.hint}`);
   }
 
   function selfCheck(same) {
@@ -672,7 +755,7 @@
       if (key === 'Enter' && cur.waitingNext) nextExercise();
       return;
     }
-    const typed = !cur.useAbacus && cur.ex.type !== 'poner';
+    const typed = !cur.useAbacus && cur.ex.type !== 'poner' && cur.ex.type !== 'opciones';
     if (key === 'Enter') {
       if (cur.useAbacus || typed) check();
       return;
@@ -753,7 +836,7 @@
     }
     renderAnswer(true);
     $('exercise-actions').innerHTML = '';
-    if (ex.type === 'calculo') addAction('🧮 Ver cómo se hace', 'btn-soft', () => playExplanation(ex));
+    if (ex.type !== 'opciones' && ex.type !== 'flash') addAction('🧮 Ver cómo se hace', 'btn-soft', () => playExplanation(ex));
     addAction('Siguiente ▶', 'btn-go', nextExercise);
   }
 
@@ -777,7 +860,7 @@
   $('abacus-sheet-close').addEventListener('click', () => {
     playToken++;
     $('abacus-sheet').hidden = true;
-    $('keypad').hidden = !cur || cur.useAbacus || cur.ex.type === 'poner';
+    $('keypad').hidden = !cur || cur.useAbacus || cur.ex.type === 'poner' || cur.ex.type === 'opciones';
   });
 
   $('helper-clear').addEventListener('click', () => {
@@ -789,7 +872,7 @@
   // Anima la solución en el ábaco de respuesta o, con ábaco real, en el ábaco en pantalla.
   function playExplanation(ex) {
     const token = ++playToken;
-    const steps = C.explain(ex.terms);
+    const steps = C.guidedSteps(ex);
     let soroban = cur.soroban;
     let text = $('exercise-step');
     if (!soroban) {
@@ -901,7 +984,7 @@
   function levelMessage(entry, levelUp, stats, isReview) {
     const level = C.getLevel(entry.levelId);
     if (isReview) return entry.passed ? '¡Repaso dominado! 💪' : 'Repasar ayuda a no olvidar. ¡Bien hecho!';
-    if (levelUp) return `🎉 ¡Subiste de nivel! Ahora: ${levelUp.id} · ${levelUp.name}. ${level.next}`;
+    if (levelUp) return `🎉 ¡Subiste de nivel! Ahora: ${levelUp.id} · ${levelUp.name}. La próxima vez empezamos mirando su lección.`;
     if (entry.passed && stats.recentPassed >= 2) return `🏆 ¡Dominaste el último nivel! ${level.next}`;
     if (entry.passed) return '¡Dominaste esta sesión! Una más así y pasas de nivel.';
     if (entry.correct / entry.total >= 0.9) return '¡Todo muy bien! Ahora intenta ir un poquito más rápido.';
@@ -992,8 +1075,8 @@
 
   function exerciseText(ex) {
     if (ex.type === 'leer') return 'Leer el ábaco';
-    if (ex.type === 'poner') return `Poner el ${ex.value}`;
-    return ex.terms.map((t, i) => (i === 0 ? '' : t < 0 ? ' − ' : ' + ') + Math.abs(t)).join('') + ' =';
+    if (ex.type === 'poner' && ex.from === undefined) return `Poner el ${ex.value}`;
+    return C.exprText(ex).replace(' = ?', ' =');
   }
 
   function renderPaperList() {
@@ -1005,7 +1088,7 @@
       b.type = 'button';
       b.appendChild(textSpan(`(${i + 1}) ${exerciseText(ex)}`));
       const right = document.createElement('span');
-      if (ex.type !== 'poner') {
+      if (ex.type !== 'poner' || ex.from !== undefined) {
         const answer = document.createElement('b');
         answer.textContent = ex.answer;
         right.appendChild(answer);
@@ -1035,88 +1118,9 @@
     showResult({ levelId: data.levelId, correct: total - paper.wrong.size, total, seconds: paper.seconds, source: 'papel', review: false });
   });
 
-  /* ---------- Escribir números ---------- */
-
-  let cal = { digit: null, round: 0, tracer: null, stars: [] };
-
-  function renderCalligraphy() {
-    const digit = cal.digit === null ? K.digitOfDay(data.calligraphy, dayNumber(today())) : cal.digit;
-    startCalDigit(digit, false);
-  }
-
-  function renderDigitPicker() {
-    const box = $('cal-digits');
-    box.innerHTML = '';
-    for (let d = 0; d <= 9; d++) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = d === cal.digit ? 'is-selected' : '';
-      b.appendChild(document.createTextNode(String(d)));
-      const stars = document.createElement('small');
-      stars.textContent = '★'.repeat(data.calligraphy[d] || 0);
-      b.appendChild(stars);
-      b.setAttribute('aria-label', `Número ${d}`);
-      b.addEventListener('click', () => startCalDigit(d, true));
-      box.appendChild(b);
-    }
-  }
-
-  function startCalDigit(d, speak) {
-    cal = { digit: d, round: 0, tracer: null, stars: [] };
-    renderDigitPicker();
-    startCalRound();
-    const text = `Vamos a escribir el ${d}. ${K.HOW[d]}`;
-    if (speak) mapi('cal-bubble', text);
-    else { $('cal-bubble').textContent = text; $('cal-bubble').className = 'bubble'; }
-    cal.tracer.demo();
-  }
-
-  function renderCalRounds() {
-    const box = $('cal-rounds');
-    box.innerHTML = '';
-    CAL_ROUNDS.forEach((r, i) => {
-      const s = textSpan((cal.stars[i] ? '⭐'.repeat(cal.stars[i]) + ' ' : '') + r.label);
-      s.className = i === cal.round ? 'is-current' : i < cal.round ? 'is-done' : '';
-      box.appendChild(s);
-    });
-  }
-
-  function startCalRound() {
-    renderCalRounds();
-    cal.tracer = new K.Tracer($('cal-tracer'), {
-      digit: cal.digit,
-      style: CAL_ROUNDS[cal.round].style,
-      onDone: result => {
-        const label = '⭐'.repeat(result.stars) || '💪';
-        if (result.stars === 0) {
-          mapi('cal-bubble', `${label} ${result.hint}`, 'try', result.hint);
-          setTimeout(() => cal.tracer.clear(), 1200);
-          return;
-        }
-        cal.stars[cal.round] = result.stars;
-        cal.round++;
-        if (cal.round < CAL_ROUNDS.length) {
-          mapi('cal-bubble', `${label} ${result.hint} Ahora: ${CAL_ROUNDS[cal.round].label.toLowerCase()}.`, 'ok');
-          setTimeout(() => { if (currentView === 'calligraphy') startCalRound(); }, 1500);
-        } else {
-          const best = Math.round(cal.stars.reduce((a, b) => a + b, 0) / cal.stars.length);
-          data.calligraphy[cal.digit] = Math.max(data.calligraphy[cal.digit] || 0, best);
-          save();
-          renderCalRounds();
-          renderDigitPicker();
-          mapi('cal-bubble', `${'⭐'.repeat(best)} ¡Terminaste el ${cal.digit}! Elige otro número o repite este.`, 'ok');
-          soundWin();
-        }
-      }
-    });
-  }
-
-  $('cal-demo').addEventListener('click', () => cal.tracer && cal.tracer.demo());
-  $('cal-clear').addEventListener('click', () => cal.tracer && cal.tracer.clear());
-  $('cal-print').addEventListener('click', () => {
+  $('tile-caligrafia').addEventListener('click', () => {
     show('print');
     $('print-kind').value = 'caligrafia';
-    $('print-digit').value = String(cal.digit);
     syncPrintKind();
     buildSheets();
   });
@@ -1216,7 +1220,7 @@
 
     if (warmup) {
       // Fila de caligrafía del día: el modelo, para repasar y para escribir sin ayuda.
-      const digit = K.digitOfDay(data.calligraphy, dayNumber(date));
+      const digit = K.digitOfDay(dayNumber(date));
       const row = document.createElement('div');
       row.className = 'sheet-warmup';
       row.appendChild(textSpan(`✏️ Escribe el ${digit}:`));
@@ -1227,9 +1231,11 @@
     const kinds = new Set(exercises.map(e => e.type));
     const instruction = document.createElement('p');
     instruction.className = 'sheet-instruction';
-    instruction.textContent = '◆ ' + (kinds.has('leer') || kinds.has('poner')
-      ? 'Escribe el número que muestra el ábaco, o colorea las cuentas del número.'
-      : kinds.has('flash') ? 'Calcula de memoria, sin ábaco:' : level.instruction + ' con tu ábaco:');
+    instruction.textContent = '◆ ' + (kinds.has('opciones')
+      ? 'Encierra la respuesta correcta. Colorea las cuentas del número que se pide.'
+      : kinds.has('leer') || kinds.has('poner')
+        ? 'Escribe el número que muestra el ábaco, o colorea las cuentas del número que se pide.'
+        : kinds.has('flash') ? 'Calcula de memoria, sin ábaco:' : level.instruction + ' con tu ábaco:');
     sheet.appendChild(instruction);
 
     const grid = document.createElement('div');
@@ -1240,7 +1246,32 @@
       item.appendChild(textSpan(`(${i + 1})`, 'sheet-num'));
       const content = document.createElement('div');
       content.className = 'sheet-content';
-      if (ex.type === 'leer' || ex.type === 'poner') {
+      if (ex.type === 'opciones') {
+        const q = document.createElement('div');
+        q.className = 'sheet-question';
+        q.appendChild(textSpan(ex.question, ''));
+        const opts = document.createElement('div');
+        opts.className = 'sheet-options';
+        ex.options.forEach(o => opts.appendChild(textSpan(o)));
+        q.appendChild(opts);
+        content.appendChild(q);
+        if (ex.value !== undefined) {
+          const holder = document.createElement('div');
+          holder.className = 'sheet-abacus small';
+          content.appendChild(holder);
+          new window.Soroban(holder, { rods: ex.rods, value: ex.value, interactive: false, animate: false });
+        }
+      } else if (ex.type === 'poner' && ex.from !== undefined) {
+        // Contar: escribir con lápiz el número de antes o de después.
+        const line = document.createElement('div');
+        line.className = 'op-inline';
+        const blank = document.createElement('span');
+        blank.className = 'answer-boxes paper';
+        blank.appendChild(textSpan('', 'answer-box'));
+        if (ex.value > ex.from) { line.appendChild(textSpan(String(ex.from), 'op-num')); line.appendChild(textSpan('→', 'op-sign')); line.appendChild(blank); }
+        else { line.appendChild(blank); line.appendChild(textSpan('←', 'op-sign')); line.appendChild(textSpan(String(ex.from), 'op-num')); }
+        content.appendChild(line);
+      } else if (ex.type === 'leer' || ex.type === 'poner') {
         if (ex.type === 'poner') content.appendChild(textSpan(String(ex.value), 'sheet-target'));
         const holder = document.createElement('div');
         holder.className = 'sheet-abacus';
@@ -1481,7 +1512,6 @@
     $('set-count').value = String(data.settings.perSession);
     $('set-abacus').value = data.settings.abacus;
     $('set-voice').checked = data.settings.voice;
-    $('set-warmup').checked = data.settings.warmup;
     $('set-sound').checked = data.settings.sound;
     $('set-rtl').checked = data.settings.rtl;
     $('set-labels').checked = data.settings.labels;
@@ -1533,7 +1563,6 @@
   $('set-count').addEventListener('change', e => { data.settings.perSession = parseInt(e.target.value, 10); save(); });
   $('set-abacus').addEventListener('change', e => { data.settings.abacus = e.target.value; save(); });
   $('set-voice').addEventListener('change', e => { data.settings.voice = e.target.checked; save(); });
-  $('set-warmup').addEventListener('change', e => { data.settings.warmup = e.target.checked; save(); });
   $('set-sound').addEventListener('change', e => { data.settings.sound = e.target.checked; save(); });
   $('set-rtl').addEventListener('change', e => { data.settings.rtl = e.target.checked; save(); });
   $('set-labels').addEventListener('change', e => { data.settings.labels = e.target.checked; save(); });
@@ -1557,7 +1586,7 @@
         if (!imported || !Array.isArray(imported.history)) throw new Error('formato');
         data = Object.assign(defaults(), imported);
         data.settings = Object.assign(defaults().settings, imported.settings);
-        data.calligraphy = Object.assign({}, imported.calligraphy);
+        data.lessons = Object.assign({}, imported.lessons);
         save();
         renderParents();
         window.alert('¡Progreso importado!');
