@@ -8,7 +8,7 @@ Este análisis sirve de base para decidir qué hace **Mi Ábaco**. Es una app pa
 |---|---|---|
 | Hojas diarias por niveles (códigos como `4A`, `B`), con *Nombre / Fecha / Tiempo* | Rutina, autonomía y el niño ve que avanza | Hojas imprimibles con el mismo encabezado y un código de nivel (`A1`…`G2`) |
 | Pasos muy pequeños entre una hoja y la siguiente | El niño casi siempre puede resolver solo | Muchos niveles cortos (amigos del 5 antes que amigos del 10, etc.) |
-| Avanza solo cuando domina: precisión **y** tiempo estándar | Se asegura la automatización antes de seguir | 2 sesiones seguidas con ≥ 90 % de aciertos al primer intento y dentro del tiempo objetivo |
+| Avanza solo cuando domina: precisión **y** tiempo estándar | Se asegura la automatización antes de seguir | Sesión dominada = ≥ 90 % de aciertos al primer intento y dentro del tiempo objetivo; 2 de las últimas 3 para subir |
 | Repetir es normal y se empieza por debajo del nivel real | Da confianza y fluidez | Si no domina, se repite el nivel; los padres pueden bajarlo |
 | El niño corrige sus propios errores | Aprende del error | Segundo intento antes de mostrar la respuesta |
 
@@ -46,15 +46,51 @@ Conceptos clave del método, en el orden en que se enseñan:
 
 Las academias de ábaco mental suelen seguir esta misma progresión: niveles con hojas, práctica diaria corta y luego *flash anzan*.
 
-## 4. Lo que implementa Mi Ábaco (v1)
+## 4. Supercerebros Play: ruta «Soroban desde cero»
 
-- **Inicio:** racha de días seguidos 🔥, los últimos 7 días, el nivel actual con un consejo y un botón para empezar.
-- **Sesión diaria** (10 ejercicios por defecto, configurable):
+Es la plataforma del mismo autor del video ([supercerebros.org/play/routes/soroban-desde-cero](https://supercerebros.org/play/routes/soroban-desde-cero)). La ruta tiene **3 módulos y 10 niveles**; los 3 primeros son gratuitos.
+
+| Módulo | Niveles |
+|---|---|
+| 1. Representar números | 1 Introducción al soroban (1–9) · 2 Decenas y unidades (10–99) |
+| 2. Sumar con los amigos del 5 y del 10 | 3 Sumas simples · 4 Restas simples · 5 Complemento a 5 · 6 Complemento a 10 · 7 Sumas y restas combinadas |
+| 3. Cálculo fluido | 8 Centenas · 9 Velocidad mental · 10 Gran maestro del ábaco |
+
+Cómo funciona cada nivel:
+
+- **Pantalla «Antes de empezar»** con el objetivo, el «cómo practicar» y tres recordatorios (valor de las cuentas, cuentas activas, valor posicional).
+- **Partidas de 5 rondas.** El niño responde **moviendo las cuentas** de un soroban en pantalla y los aciertos avanzan solos. Hay un temporizador por ronda.
+- Cada nivel tiene un **mensaje de error específico** (por ejemplo: «Pregunta ¿cuánto falta para 5?: 1 y 4 son amigos…») y un **siguiente paso**.
+- **Criterio de dominio:** 80 % de precisión, al menos 5 respuestas por intento, 67 % de constancia y 2 intentos exitosos.
+- **Ruta visual** con módulos bloqueados hasta completar el anterior, porcentaje de avance y una **«recomendación explicable»** que dice por qué toca esa actividad.
+- **Estadísticas:** precisión, constancia, prácticas y tiempo medio.
+
+Una observación: en su nivel «Sumas simples (sin llevadas)» aparece `1 + 4`, que en el soroban ya necesita amigos del 5. Mi Ábaco evita eso porque revisa el movimiento que pide cada varilla.
+
+**Qué adoptamos de Supercerebros:**
+
+| Idea | En Mi Ábaco |
+|---|---|
+| Ruta por módulos con candados y % | Vista **Mi camino**: 8 módulos, niveles dominados, actual y bloqueados, y botón «Repasar» en los ya superados |
+| «Antes de empezar» | Pantalla previa a la sesión con objetivo, consejo y 3 recordatorios del módulo |
+| Responder moviendo las cuentas | Opción por defecto en los cálculos; también se puede responder con teclado |
+| Mensaje de error específico | Pista propia de cada nivel tras el primer fallo |
+| Siguiente paso | Se muestra al subir de nivel |
+| Dominio con constancia | **2 sesiones dominadas entre las últimas 3**, en vez de 2 seguidas |
+| Recomendación explicable y estadísticas | Frase en la tarjeta de hoy y panel con precisión, constancia, prácticas y tiempo medio |
+
+No adoptamos el temporizador con cuenta regresiva por ronda: a los 7 años preferimos medir el tiempo sin presionar.
+
+## 5. Lo que implementa Mi Ábaco (v1)
+
+- **Inicio:** racha de días seguidos 🔥, los últimos 7 días, el nivel actual con un consejo, por qué toca y un botón para empezar.
+- **Mi camino:** mapa de módulos y niveles con progreso, estadísticas y repaso de niveles superados.
+- **Sesión diaria** (10 ejercicios por defecto, configurable), con una pantalla «Antes de empezar»:
   - *Leer el ábaco*: escribir el número que muestra.
   - *Poner en el ábaco*: mover las cuentas hasta formar el número.
-  - *Cálculo*: en horizontal (`3 + 4 =`) o en columna al estilo Kumon, con teclado numérico grande.
+  - *Cálculo*: en horizontal (`3 + 4 =`) o en columna al estilo Kumon. Se responde moviendo las cuentas (por defecto) o con un teclado numérico grande.
   - *Flash anzan*: los números aparecen uno a uno.
-  - Dos intentos por ejercicio; después se muestra la respuesta y el botón **«Ver cómo se hace»** anima la solución en el ábaco paso a paso.
+  - Dos intentos por ejercicio, con una pista del nivel tras el primer fallo. Después se muestra la respuesta y el botón **«Ver cómo se hace»** anima la solución en el ábaco paso a paso.
   - Un ábaco de ayuda opcional en cada cálculo.
 - **Resultado:** estrellas, aciertos, tiempo, racha y un mensaje sobre el avance de nivel.
 - **Hojas imprimibles:** una por día, con encabezado Kumon (*Nombre / Fecha / Tiempo*), 10 ejercicios y una hoja de respuestas. **La hoja de un día tiene los mismos ejercicios que la sesión en pantalla de ese día.** La hoja hecha en papel se puede registrar para que cuente en la racha.
@@ -76,9 +112,9 @@ Las academias de ábaco mental suelen seguir esta misma progresión: niveles con
 
 Los generadores revisan qué movimiento pide cada varilla (directo, amigo del 5 o amigo del 10). Así, por ejemplo, un nivel de «sumas directas» nunca incluye un ejercicio que necesite amigos.
 
-## 5. Ideas para siguientes versiones
+## 6. Ideas para siguientes versiones
 
-- **Evaluación inicial** al estilo Smartick, para elegir el nivel de inicio automáticamente.
+- **Evaluación inicial** al estilo Smartick o la «recomendación» de Supercerebros, para elegir el nivel de inicio automáticamente.
 - **Adaptación dentro de la sesión**: si falla dos seguidos, intercalar un ejercicio del nivel anterior.
 - **App instalable sin conexión** (PWA) para usarla en una tableta.
 - **Varios perfiles**, por ejemplo para hermanos.
@@ -90,4 +126,4 @@ Los generadores revisan qué movimiento pide cada varilla (directo, amigo del 5 
 
 - Smartick: [El Espectador](https://www.elespectador.com/actualidad/quince-minutos-diarios-para-aprender-matematicas-con-el-metodo-online-smartick-article/), [BioBioChile](https://www.biobiochile.cl/especial/e-learning/noticias/2020/11/13/smartick-la-plataforma-que-ayuda-a-los-ninos-a-reforzar-matematicas.shtml), [Colombia.com](https://www.colombia.com/tecnologia/aplicaciones/sdi/165664/smartick-el-secreto-contra-los-malos-resultados-en-matematicas-para-ninos), [Educación 3.0](https://www.educaciontrespuntocero.com/experiencias/smartick/)
 - Kumon: la hoja de ejemplo compartida (niveles 4A y B) y el funcionamiento público del método.
-- Soroban: [video de referencia](https://youtu.be/0tN_roxCV3A).
+- Soroban: [video de referencia](https://youtu.be/0tN_roxCV3A) y [Supercerebros Play – Soroban desde cero](https://supercerebros.org/play/routes/soroban-desde-cero).

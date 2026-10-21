@@ -19,8 +19,8 @@
       name: '',
       avatar: '🐼',
       levelId: C.LEVELS[0].id,
-      passes: 0,
-      settings: { perSession: 10, sound: true, rtl: true, labels: true },
+      levelStart: 0,
+      settings: { perSession: 10, sound: true, rtl: true, labels: true, answerMode: 'abaco' },
       history: []
     };
   }
@@ -91,23 +91,52 @@
     return ratio >= 0.9 ? 3 : ratio >= 0.7 ? 2 : 1;
   }
 
-  // Guarda una sesión (de pantalla o de papel) y aplica la regla de avance de nivel.
+  // Estadísticas de un nivel. Para el nivel actual solo cuentan las sesiones
+  // desde que se empezó (o se eligió) ese nivel.
+  function levelStats(levelId) {
+    const since = levelId === data.levelId ? data.levelStart || 0 : 0;
+    const all = data.history.filter(h => h.levelId === levelId && (h.at || 0) >= since);
+    const recent = all.slice(-3);
+    const answered = all.reduce((sum, h) => sum + h.total, 0);
+    const correct = all.reduce((sum, h) => sum + h.correct, 0);
+    const seconds = all.reduce((sum, h) => sum + h.seconds, 0);
+    const recentPassed = recent.filter(h => h.passed).length;
+    return {
+      practices: all.length,
+      recentPassed,
+      accuracy: answered ? Math.round((100 * correct) / answered) : null,
+      consistency: recent.length ? Math.round((100 * recentPassed) / recent.length) : null,
+      avgSeconds: answered ? Math.round(seconds / answered) : null
+    };
+  }
+
+  function setLevel(levelId) {
+    data.levelId = levelId;
+    data.levelStart = Date.now();
+  }
+
+  // Guarda una sesión (de pantalla o de papel) y aplica la regla de avance de nivel:
+  // 2 sesiones dominadas entre las últimas 3 del nivel actual.
   function recordSession({ date, levelId, correct, total, seconds, source }) {
     const level = C.getLevel(levelId);
     const passed = correct / total >= 0.9 && seconds / total <= level.targetSec;
-    const entry = { date: date || today(), levelId, correct, total, seconds, source, passed };
+    const entry = { date: date || today(), at: Date.now(), levelId, correct, total, seconds, source, passed };
     data.history.push(entry);
     let levelUp = null;
-    if (levelId === data.levelId) {
-      data.passes = passed ? data.passes + 1 : 0;
-      if (data.passes >= 2 && C.levelIndex(levelId) < C.LEVELS.length - 1) {
-        levelUp = C.nextLevel(levelId);
-        data.levelId = levelUp.id;
-        data.passes = 0;
-      }
+    const stats = levelStats(levelId);
+    if (levelId === data.levelId && stats.recentPassed >= 2 && C.levelIndex(levelId) < C.LEVELS.length - 1) {
+      levelUp = C.nextLevel(levelId);
+      setLevel(levelUp.id);
     }
     save();
-    return { entry, levelUp };
+    return { entry, levelUp, stats };
+  }
+
+  // Por qué toca este nivel hoy y qué falta para superarlo.
+  function recommendation(level, stats) {
+    if (!stats.practices) return 'Primera vez en este nivel: hoy creas tu punto de partida.';
+    if (stats.recentPassed === 1) return 'Ya dominaste 1 sesión. ¡Una más y pasas de nivel!';
+    return `Para pasar de nivel: 2 sesiones con 9 de cada 10 bien y menos de ${level.targetSec} s por ejercicio.`;
   }
 
   /* ---------- Sonido ---------- */
@@ -148,11 +177,15 @@
     if (view === 'print') renderPrint();
     if (view === 'learn') renderLearn();
     if (view === 'parents') renderParents();
+    if (view === 'route') renderRoute();
   }
 
   document.addEventListener('click', e => {
     const go = e.target.closest('[data-go]');
-    if (go) show(go.dataset.go);
+    if (go) {
+      e.preventDefault();
+      show(go.dataset.go);
+    }
   });
 
   /* ---------- Inicio ---------- */
@@ -185,6 +218,7 @@
 
     $('today-level').textContent = `${level.id} · ${level.name}`;
     $('today-tip').textContent = '💡 ' + level.tip;
+    $('today-why').textContent = recommendation(level, levelStats(level.id));
     const todays = data.history.filter(h => h.date === today());
     if (todays.length) {
       const best = Math.max(...todays.map(h => starsFor(h.correct, h.total)));
@@ -234,8 +268,9 @@
   let flashToken = 0;
   let playToken = 0;
 
-  function startSession() {
-    const level = C.getLevel(data.levelId);
+  // Prepara la sesión y muestra primero la pantalla «Antes de empezar».
+  function startSession(levelId) {
+    const level = C.getLevel(levelId || data.levelId);
     // El primer intento del día usa la misma semilla que la hoja impresa de ese día.
     const attempt = data.history.filter(h => h.date === today() && h.levelId === level.id && h.source === 'pantalla').length;
     session = {
@@ -246,12 +281,50 @@
       start: Date.now(),
       timer: null
     };
+    const mod = C.moduleOf(level.id);
+    $('briefing-module').textContent = `Módulo ${C.MODULES.indexOf(mod) + 1} · ${mod.title}` + (level.id !== data.levelId ? ' · repaso' : '');
+    $('briefing-level').textContent = `${level.id} · ${level.name}`;
+    $('briefing-objective').textContent = mod.objective;
+    $('briefing-tip').textContent = '💡 ' + level.tip;
+    const concepts = $('briefing-concepts');
+    concepts.innerHTML = '';
+    mod.concepts.forEach(c => {
+      const li = document.createElement('li');
+      li.textContent = c;
+      concepts.appendChild(li);
+    });
+    setSessionStage('briefing');
     show('session');
+    $('session-timer').textContent = '0:00';
+    renderProgress();
+    $('briefing-go').focus();
+  }
+
+  function beginExercises() {
+    session.start = Date.now();
     session.timer = setInterval(updateTimer, 1000);
     updateTimer();
-    renderProgress();
+    setSessionStage('exercises');
     loadExercise();
   }
+
+  function setSessionStage(stage) {
+    $('briefing').hidden = stage !== 'briefing';
+    $('exercise-card').hidden = stage === 'briefing';
+    if (stage === 'briefing') {
+      $('keypad').hidden = true;
+      $('helper').hidden = true;
+    }
+  }
+
+  $('briefing-go').addEventListener('click', beginExercises);
+
+  $('session-fullscreen').addEventListener('click', () => {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } catch (e) { /* no disponible */ }
+  });
 
   function stopSession() {
     if (session) clearInterval(session.timer);
@@ -284,7 +357,9 @@
     const level = session.level;
     flashToken++;
     playToken++;
-    cur = { ex, attempts: 0, answer: '', done: false, boxes: 0, rtl: false, soroban: null, locked: false };
+    // Se responde moviendo las cuentas en «poner» y, si así está configurado, en los cálculos.
+    const useAbacus = ex.type === 'poner' || (ex.type === 'calculo' && data.settings.answerMode === 'abaco');
+    cur = { ex, attempts: 0, answer: '', done: false, boxes: 0, rtl: false, soroban: null, locked: false, useAbacus };
     $('feedback').textContent = '';
     $('feedback').className = 'feedback';
     $('exercise-actions').innerHTML = '';
@@ -298,8 +373,8 @@
       calculo: level.instruction
     }[ex.type];
     $('exercise-instruction').textContent = `(${session.index + 1}) ${instruction}`;
-    $('keypad').hidden = ex.type === 'poner';
-    $('helper').hidden = ex.type !== 'calculo';
+    $('keypad').hidden = useAbacus;
+    $('helper').hidden = ex.type !== 'calculo' || useAbacus;
     $('helper-step').hidden = true;
 
     if (ex.type === 'leer') {
@@ -314,12 +389,7 @@
       target.className = 'target-number';
       target.textContent = ex.value;
       body.appendChild(target);
-      const holder = document.createElement('div');
-      holder.className = 'exercise-abacus';
-      body.appendChild(holder);
-      cur.soroban = new window.Soroban(holder, { rods: ex.rods, interactive: true, showLabels: data.settings.labels });
-      addAction('¡Listo! ✓', 'btn-primary', check);
-      addAction('Limpiar', 'btn-soft', () => cur.soroban.clear());
+      addAbacusAnswer(body, ex);
     } else if (ex.type === 'flash') {
       const stage = document.createElement('div');
       stage.className = 'flash-stage';
@@ -336,9 +406,25 @@
       cur.rtl = data.settings.rtl && termLen > 1;
       cur.boxes = Math.max(String(ex.answer).length, termLen + (ex.terms.slice(1).some(t => t > 0) ? 1 : 0));
       body.appendChild(buildOperation(ex, answerBoxes(cur.boxes)));
-      setupHelper(ex);
+      if (useAbacus) addAbacusAnswer(body, ex);
+      else setupHelper(ex);
     }
     renderAnswer();
+  }
+
+  // Ábaco en el que se responde: se pulsa «¡Listo!» cuando muestra el resultado.
+  function addAbacusAnswer(body, ex) {
+    const holder = document.createElement('div');
+    holder.className = 'exercise-abacus';
+    body.appendChild(holder);
+    cur.soroban = new window.Soroban(holder, { rods: ex.rods, interactive: true, showLabels: data.settings.labels });
+    const step = document.createElement('p');
+    step.className = 'step-text';
+    step.id = 'exercise-step';
+    step.hidden = true;
+    body.appendChild(step);
+    addAction('¡Listo! ✓', 'btn-primary', check);
+    addAction('Limpiar', 'btn-soft', () => cur.soroban.clear());
   }
 
   function addAction(label, cls, fn) {
@@ -436,7 +522,7 @@
       return;
     }
     if (key === 'Enter') { check(); return; }
-    if (cur.ex.type === 'poner') return;
+    if (cur.useAbacus) return;
     if (key === 'Backspace') {
       cur.answer = cur.rtl ? cur.answer.slice(1) : cur.answer.slice(0, -1);
     } else if (/^[0-9]$/.test(key) && cur.answer.length < cur.boxes) {
@@ -462,8 +548,9 @@
   function check() {
     const ex = cur.ex;
     let given;
-    if (ex.type === 'poner') {
+    if (cur.useAbacus) {
       given = cur.soroban.getValue();
+      if (ex.type === 'calculo') cur.answer = String(given);
     } else {
       if (cur.answer === '') return;
       given = parseInt(cur.answer, 10);
@@ -488,7 +575,8 @@
     void $('exercise-card').offsetWidth;
     $('exercise-card').classList.add('shake');
     if (cur.attempts < 2) {
-      fb.textContent = 'Casi… revisa e inténtalo otra vez 💪';
+      // Pista específica del nivel, como guía para el segundo intento.
+      fb.textContent = 'Casi… ' + session.level.hint;
       fb.className = 'feedback is-try';
       cur.answer = '';
       renderAnswer();
@@ -501,12 +589,11 @@
     fb.textContent = `La respuesta es ${ex.answer}. ¡La próxima te sale!`;
     fb.className = 'feedback is-miss';
     renderProgress();
-    if (ex.type === 'poner') {
+    if (cur.soroban) {
       cur.soroban.setInteractive(false);
       cur.soroban.setValue(ex.answer);
-    } else {
-      renderAnswer(true);
     }
+    renderAnswer(true);
     $('exercise-actions').innerHTML = '';
     if (ex.type === 'calculo') addAction('🧮 Ver cómo se hace', 'btn-soft', () => playExplanation(ex));
     addAction('Siguiente ▶', 'btn-primary', nextExercise);
@@ -532,21 +619,27 @@
     if (helperSoroban) { helperSoroban.highlight(null); helperSoroban.clear(); }
   });
 
+  // Anima la solución en el ábaco de respuesta o, si se respondió con teclado, en el de ayuda.
   function playExplanation(ex) {
     const token = ++playToken;
     const steps = C.explain(ex.terms);
-    const helper = $('helper');
-    helper.hidden = false;
-    helper.open = true;
-    helper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const text = $('helper-step');
+    let soroban = cur.soroban;
+    let text = $('exercise-step');
+    if (!soroban) {
+      const helper = $('helper');
+      helper.hidden = false;
+      helper.open = true;
+      soroban = helperSoroban;
+      text = $('helper-step');
+    }
     text.hidden = false;
+    text.scrollIntoView({ behavior: 'smooth', block: 'center' });
     let i = 0;
     (function step() {
       if (token !== playToken) return;
       const s = steps[i];
-      helperSoroban.setValue(s.value);
-      helperSoroban.highlight(s.place);
+      soroban.setValue(s.value);
+      soroban.highlight(s.place);
       text.textContent = s.text;
       if (++i < steps.length) setTimeout(step, 2600);
     })();
@@ -596,27 +689,99 @@
     const total = session.exercises.length;
     const correct = session.results.filter(r => r && r.correct).length;
     const seconds = elapsed();
-    const { entry, levelUp } = recordSession({ levelId: session.level.id, correct, total, seconds, source: 'pantalla' });
+    const isReview = session.level.id !== data.levelId;
+    const { entry, levelUp, stats } = recordSession({ levelId: session.level.id, correct, total, seconds, source: 'pantalla' });
     const stars = starsFor(correct, total);
     $('result-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
     $('result-title').textContent = stars === 3 ? '¡Increíble!' : stars === 2 ? '¡Muy bien!' : '¡Buen trabajo!';
     $('result-score').textContent = `${correct}/${total}`;
     $('result-time').textContent = formatTime(seconds);
     $('result-streak').textContent = streakInfo().current;
-    $('result-level').textContent = levelMessage(entry, levelUp);
+    $('result-level').textContent = levelMessage(entry, levelUp, stats, isReview);
+    $('result-more').dataset.level = isReview ? session.level.id : '';
     show('result');
     soundWin();
     confetti(stars === 3 || levelUp ? 60 : 25);
   }
 
-  function levelMessage(entry, levelUp) {
-    if (levelUp) return `🎉 ¡Subiste de nivel! Ahora: ${levelUp.id} · ${levelUp.name}`;
+  function levelMessage(entry, levelUp, stats, isReview) {
+    const level = C.getLevel(entry.levelId);
+    if (isReview) return entry.passed ? '¡Repaso dominado! 💪' : 'Repasar ayuda a no olvidar. ¡Bien hecho!';
+    if (levelUp) return `🎉 ¡Subiste de nivel! Ahora: ${levelUp.id} · ${levelUp.name}. ${level.next}`;
+    if (entry.passed && stats.recentPassed >= 2) return `🏆 ¡Dominaste el último nivel! ${level.next}`;
     if (entry.passed) return '¡Dominaste esta sesión! Una más así y pasas de nivel.';
     if (entry.correct / entry.total >= 0.9) return '¡Todo muy bien! Ahora intenta ir un poquito más rápido.';
+    if (stats.recentPassed === 1) return 'Ya tienes 1 sesión dominada: la próxima puede ser la segunda. 💪';
     return 'Repetiremos este nivel para dominarlo. ¡Practicar es el secreto! 💪';
   }
 
-  $('result-more').addEventListener('click', () => startSession());
+  $('result-more').addEventListener('click', e => startSession(e.currentTarget.dataset.level || undefined));
+
+  /* ---------- Mi camino ---------- */
+
+  function statTile(label, value) {
+    const div = document.createElement('div');
+    div.appendChild(textSpan(value, 'stat-value'));
+    div.appendChild(textSpan(label, 'stat-label'));
+    return div;
+  }
+
+  function renderRoute() {
+    const level = C.getLevel(data.levelId);
+    const idx = C.levelIndex(level.id);
+    const total = C.LEVELS.length;
+    const stats = levelStats(level.id);
+    $('route-summary').textContent = `Nivel ${idx + 1} de ${total} · ${level.id} ${level.name}`;
+    $('route-bar').style.width = Math.round((100 * idx) / total) + '%';
+    const tiles = $('route-stats');
+    tiles.innerHTML = '';
+    tiles.appendChild(statTile('Precisión', stats.accuracy === null ? '—' : stats.accuracy + ' %'));
+    tiles.appendChild(statTile('Constancia', stats.consistency === null ? '—' : stats.consistency + ' %'));
+    tiles.appendChild(statTile('Prácticas', String(stats.practices)));
+    tiles.appendChild(statTile('Tiempo medio', stats.avgSeconds === null ? '—' : stats.avgSeconds + ' s'));
+    $('route-rule').textContent = recommendation(level, stats);
+
+    const box = $('route-modules');
+    box.innerHTML = '';
+    C.MODULES.forEach((mod, m) => {
+      const card = document.createElement('div');
+      card.className = 'card module';
+      const first = C.levelIndex(mod.levels[0].id);
+      const last = C.levelIndex(mod.levels[mod.levels.length - 1].id);
+      card.classList.toggle('is-done', last < idx);
+      card.classList.toggle('is-locked', first > idx);
+      const eyebrow = textSpan(`Módulo ${m + 1}` + (last < idx ? ' · completado ✅' : first > idx ? ' · 🔒' : ' · en curso'), 'eyebrow');
+      card.appendChild(eyebrow);
+      const h = document.createElement('h2');
+      h.textContent = mod.title;
+      card.appendChild(h);
+      card.appendChild(textSpan(mod.objective, 'muted module-objective'));
+      const list = document.createElement('ol');
+      list.className = 'path';
+      mod.levels.forEach(l => {
+        const i = C.levelIndex(l.id);
+        const li = document.createElement('li');
+        li.className = i < idx ? 'is-done' : i === idx ? 'is-current' : 'is-locked';
+        li.appendChild(textSpan(i < idx ? '✓' : i === idx ? '★' : '🔒', 'path-dot'));
+        const info = document.createElement('div');
+        info.className = 'path-info';
+        info.appendChild(textSpan(`${l.id} · ${l.name}`, 'path-name'));
+        info.appendChild(textSpan(l.tip, 'path-tip'));
+        li.appendChild(info);
+        if (i <= idx) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn ' + (i === idx ? 'btn-primary' : 'btn-soft');
+          btn.textContent = i === idx ? '▶ Practicar' : 'Repasar';
+          btn.addEventListener('click', () => startSession(l.id));
+          li.appendChild(btn);
+        }
+        list.appendChild(li);
+      });
+      card.appendChild(list);
+      box.appendChild(card);
+    });
+  }
 
   function confetti(n) {
     const box = $('confetti');
@@ -876,23 +1041,15 @@
     $('set-sound').checked = data.settings.sound;
     $('set-rtl').checked = data.settings.rtl;
     $('set-labels').checked = data.settings.labels;
-    $('level-progress').textContent = `Nivel ${level.id}: ${data.passes} de 2 sesiones dominadas. Tiempo objetivo: ${level.targetSec} s por ejercicio.`;
+    const stats = levelStats(level.id);
+    $('level-progress').textContent = `Nivel ${level.id}: ${stats.recentPassed} de 2 sesiones dominadas (entre las últimas 3). Tiempo objetivo: ${level.targetSec} s por ejercicio.`;
+    $('set-answer').value = data.settings.answerMode;
 
     const atLevel = data.history.filter(h => h.levelId === level.id).slice(-2);
     const struggling = atLevel.length === 2 && atLevel.every(h => h.correct / h.total < 0.6);
     const suggestion = $('level-suggestion');
     suggestion.hidden = !struggling || C.levelIndex(level.id) === 0;
     suggestion.textContent = `Las dos últimas sesiones costaron trabajo. Considera volver a ${C.previousLevel(level.id).id} unos días para ganar confianza.`;
-
-    const list = $('level-list');
-    list.innerHTML = '';
-    const idx = C.levelIndex(level.id);
-    C.LEVELS.forEach((l, i) => {
-      const li = document.createElement('li');
-      li.textContent = `${i < idx ? '✅' : i === idx ? '👉' : '⬜'} ${l.id} · ${l.name}`;
-      li.className = i === idx ? 'is-current' : '';
-      list.appendChild(li);
-    });
 
     const tbody = $('history-body');
     tbody.innerHTML = '';
@@ -934,7 +1091,8 @@
   $('gate-answer').addEventListener('keydown', e => { if (e.key === 'Enter') $('gate-go').click(); });
 
   $('set-name').addEventListener('change', e => { data.name = e.target.value.trim(); save(); });
-  $('set-level').addEventListener('change', e => { data.levelId = e.target.value; data.passes = 0; save(); renderParents(); });
+  $('set-level').addEventListener('change', e => { setLevel(e.target.value); save(); renderParents(); });
+  $('set-answer').addEventListener('change', e => { data.settings.answerMode = e.target.value; save(); });
   $('set-count').addEventListener('change', e => { data.settings.perSession = parseInt(e.target.value, 10); save(); });
   $('set-sound').addEventListener('change', e => { data.settings.sound = e.target.checked; save(); });
   $('set-rtl').addEventListener('change', e => { data.settings.rtl = e.target.checked; save(); });

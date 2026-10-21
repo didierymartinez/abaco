@@ -128,8 +128,9 @@ button:focus-visible, .chip:focus-visible, [tabindex]:focus-visible { outline: 3
 
 .today-card .tip { background: var(--soft); border-radius: 14px; padding: 10px 12px; }
 .today-status { color: var(--muted); }
+.why { font-size: .95rem; color: var(--primary-dark); margin: 4px 0 0; }
 
-.menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.menu { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .menu-item {
   border: 0; background: var(--card); box-shadow: var(--shadow); border-radius: var(--radius);
   padding: 18px 10px; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; color: var(--ink);
@@ -138,6 +139,33 @@ button:focus-visible, .chip:focus-visible, [tabindex]:focus-visible { outline: 3
 .menu-item span { font-size: 2rem; }
 
 @keyframes flicker { 0%, 100% { transform: scale(1) rotate(-2deg); } 50% { transform: scale(1.08) rotate(2deg); } }
+
+/* Antes de empezar */
+.briefing .tip { background: var(--soft); border-radius: 14px; padding: 10px 12px; }
+.concepts { list-style: none; padding: 0; margin: 0 0 6px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.concepts li { background: #eef5ff; border-radius: 14px; padding: 12px; font-weight: 800; text-align: center; }
+
+/* Mi camino */
+.bar { height: 14px; background: var(--soft); border-radius: 999px; overflow: hidden; margin: 10px 0 16px; }
+.bar span { display: block; height: 100%; background: var(--primary); border-radius: 999px; min-width: 14px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.stats div { background: var(--soft); border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; }
+.stat-value { font-size: 1.5rem; font-weight: 900; }
+.stat-label { color: var(--muted); font-size: .85rem; }
+.module.is-locked { opacity: .6; }
+.module-objective { display: block; margin-bottom: 10px; }
+.path { list-style: none; padding: 0; margin: 0; }
+.path li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.path-dot {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 900; background: var(--soft); color: var(--muted);
+}
+.path li.is-done .path-dot { background: var(--ok); color: #fff; }
+.path li.is-current .path-dot { background: var(--primary); color: #fff; box-shadow: 0 0 0 4px #ffd9bd; }
+.path-info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.path-name { font-weight: 900; }
+.path-tip { color: var(--muted); font-size: .9rem; }
+.path .btn { padding: 8px 16px; font-size: .95rem; flex: none; }
 
 /* Encabezado de vistas */
 .view-head { display: flex; align-items: center; gap: 12px; margin: 6px 0 18px; }
@@ -226,9 +254,6 @@ button:focus-visible, .chip:focus-visible, [tabindex]:focus-visible { outline: 3
 
 /* Padres */
 .suggestion { background: #fff4d6; border-radius: 12px; padding: 10px 12px; }
-.level-list { columns: 2; padding-left: 0; list-style: none; margin: 0; }
-.level-list li { padding: 3px 0; break-inside: avoid; }
-.level-list li.is-current { font-weight: 900; color: var(--primary-dark); }
 .table-wrap { overflow-x: auto; }
 .history { width: 100%; border-collapse: collapse; font-size: .95rem; }
 .history th, .history td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -299,14 +324,16 @@ button:focus-visible, .chip:focus-visible, [tabindex]:focus-visible { outline: 3
 @media (max-width: 680px) {
   h1 { font-size: 1.5rem; }
   .grid-2 { grid-template-columns: 1fr; }
-  .menu { grid-template-columns: 1fr; }
-  .menu-item { flex-direction: row; justify-content: flex-start; padding: 14px 18px; }
+  .menu { grid-template-columns: 1fr 1fr; }
+  .concepts { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .path-tip { display: none; }
+  .menu-item { padding: 14px 10px; }
   .menu-item span { font-size: 1.6rem; }
   .op-inline, .op-column, .answer-row .answer-boxes { font-size: 2.6rem; }
   .flash-stage.is-big { font-size: 4.5rem; }
   .target-number { font-size: 3.6rem; }
   .keypad button { height: 58px; }
-  .level-list { columns: 1; }
   .sheet { padding: 18px; aspect-ratio: auto; }
   .sheet .op-inline, .sheet .op-column { font-size: 1.3rem; }
   .sheet-head { flex-direction: column; }

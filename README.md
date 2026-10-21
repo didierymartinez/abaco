@@ -4,10 +4,11 @@ Herramientas para aprender a usar el ábaco soroban. Es una app web para niños 
 
 - **Kumon:** hojas diarias por niveles.
 - **Smartick:** sesiones cortas con respuesta inmediata.
-- **Soroban:** amigos del 5 y del 10, y cálculo mental (anzan).
+- **Soroban:** amigos del 5 y del 10, y cálculo mental (anzan), con ideas de la ruta «Soroban desde cero» de Supercerebros.
 
 - 🔥 **Racha** de días seguidos practicando.
-- 🧮 **Sesión diaria:** leer el ábaco, poner números, sumas y restas en columna y *flash anzan*.
+- 🗺️ **Mi camino:** ruta por módulos con progreso, estadísticas y repaso.
+- 🧮 **Sesión diaria:** leer el ábaco, poner números, sumas y restas (se responde moviendo las cuentas o con teclado) y *flash anzan*.
 - 🖨️ **Hojas imprimibles** con encabezado Nombre / Fecha / Tiempo y hoja de respuestas.
 - 👣 **Explicación paso a paso** en el ábaco cuando la niña se equivoca.
 - 👨‍👩‍👧 **Panel de padres** con nivel, ajustes, historial y copia de seguridad.

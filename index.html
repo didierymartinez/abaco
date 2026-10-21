@@ -46,11 +46,13 @@
           <h2 id="today-level"></h2>
           <p class="tip" id="today-tip"></p>
           <div class="today-status" id="today-status"></div>
+          <p class="why" id="today-why"></p>
           <button class="btn btn-primary btn-xl" id="start-session" type="button">▶ Empezar</button>
         </div>
       </div>
 
       <nav class="menu">
+        <button class="menu-item" data-go="route" type="button"><span>🗺️</span>Mi camino</button>
         <button class="menu-item" data-go="print" type="button"><span>🖨️</span>Hojas para imprimir</button>
         <button class="menu-item" data-go="learn" type="button"><span>🧮</span>Aprende el ábaco</button>
         <button class="menu-item" data-go="parents" type="button"><span>👨‍👩‍👧</span>Padres</button>
@@ -63,6 +65,19 @@
         <button class="icon-btn" id="session-exit" type="button" aria-label="Salir">✕</button>
         <ol class="progress" id="session-progress"></ol>
         <div class="timer" id="session-timer">0:00</div>
+        <button class="icon-btn" id="session-fullscreen" type="button" aria-label="Pantalla completa">⛶</button>
+      </div>
+
+      <div class="card briefing" id="briefing">
+        <p class="eyebrow" id="briefing-module"></p>
+        <h2 id="briefing-level"></h2>
+        <p><b>Objetivo:</b> <span id="briefing-objective"></span></p>
+        <p class="tip" id="briefing-tip"></p>
+        <p class="eyebrow">Antes de empezar, recuerda</p>
+        <ul class="concepts" id="briefing-concepts"></ul>
+        <div class="row center">
+          <button class="btn btn-primary btn-xl" id="briefing-go" type="button">¡Comenzar!</button>
+        </div>
       </div>
 
       <div class="card exercise-card" id="exercise-card">
@@ -108,6 +123,22 @@
         </div>
       </div>
       <div class="confetti" id="confetti" aria-hidden="true"></div>
+    </section>
+
+    <!-- Mi camino -->
+    <section class="view" id="view-route" hidden>
+      <div class="view-head">
+        <button class="icon-btn" data-go="home" type="button" aria-label="Volver">←</button>
+        <h1>Mi camino</h1>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Ruta del soroban</p>
+        <h2 id="route-summary"></h2>
+        <div class="bar" aria-hidden="true"><span id="route-bar"></span></div>
+        <div class="stats" id="route-stats"></div>
+        <p class="muted" id="route-rule"></p>
+      </div>
+      <div id="route-modules"></div>
     </section>
 
     <!-- Imprimir -->
@@ -226,9 +257,12 @@
             <label>Ejercicios por sesión
               <select id="set-count"><option>5</option><option>10</option><option>15</option><option>20</option></select>
             </label>
+            <label>Responder los cálculos
+              <select id="set-answer"><option value="abaco">Moviendo las cuentas</option><option value="teclado">Con el teclado</option></select>
+            </label>
           </div>
           <label class="check"><input type="checkbox" id="set-sound"> Sonidos</label>
-          <label class="check"><input type="checkbox" id="set-rtl"> En sumas en columna, escribir la respuesta de derecha a izquierda (unidades primero)</label>
+          <label class="check"><input type="checkbox" id="set-rtl"> Con teclado, en sumas en columna, escribir la respuesta de derecha a izquierda (unidades primero)</label>
           <label class="check"><input type="checkbox" id="set-labels"> Mostrar U, D, C debajo del ábaco</label>
           <p class="muted" id="level-progress"></p>
           <p class="suggestion" id="level-suggestion" hidden></p>
@@ -236,8 +270,7 @@
 
         <div class="card">
           <h2>Cómo avanza de nivel</h2>
-          <p class="muted">Como en Kumon, un nivel se domina con <b>2 sesiones seguidas</b> con al menos <b>90 % de aciertos</b> al primer intento y dentro del tiempo objetivo. Si no, se repite el nivel: repetir es parte del método. Puedes cambiar el nivel manualmente arriba.</p>
-          <ol class="level-list" id="level-list"></ol>
+          <p class="muted">Una sesión está <b>dominada</b> con al menos <b>90 % de aciertos</b> al primer intento y dentro del tiempo objetivo. El nivel se supera con <b>2 sesiones dominadas entre las últimas 3</b>: un mal día no borra el progreso, pero hace falta constancia. Si no, se repite el nivel, porque repetir es parte del método. Puedes cambiar el nivel manualmente arriba; el mapa completo está en <a href="#" data-go="route">Mi camino</a>.</p>
         </div>
 
         <div class="card">
