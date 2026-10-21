@@ -1,16 +1,270 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=}, initial-scale=1.0">
-    <title>Document</title>
-    <style>
-
-        
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ff8a3d">
+  <title>Mi Ábaco</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-    
+  <div id="app">
+
+    <!-- Inicio -->
+    <section class="view" id="view-home">
+      <header class="hello">
+        <button class="avatar" id="home-avatar" type="button" aria-label="Cambiar perfil">🐼</button>
+        <div>
+          <h1 id="home-title">¡Hola!</h1>
+          <p class="muted" id="home-date"></p>
+        </div>
+      </header>
+
+      <div class="card onboarding" id="onboarding" hidden>
+        <h2>¿Cómo te llamas?</h2>
+        <input id="onboarding-name" class="text-input" maxlength="20" placeholder="Tu nombre" autocomplete="off">
+        <p class="muted">Elige tu compañero:</p>
+        <div class="avatar-picker" id="onboarding-avatars"></div>
+        <button class="btn btn-primary" id="onboarding-save" type="button">¡Vamos!</button>
+      </div>
+
+      <div class="grid-2">
+        <div class="card streak-card">
+          <div class="streak-flame" id="streak-flame">🔥</div>
+          <div>
+            <div class="streak-number"><span id="streak-count">0</span> <small id="streak-unit">días seguidos</small></div>
+            <p class="muted" id="streak-best"></p>
+          </div>
+          <ol class="week" id="week-strip" aria-label="Últimos 7 días"></ol>
+        </div>
+
+        <div class="card today-card">
+          <p class="eyebrow">Sesión de hoy</p>
+          <h2 id="today-level"></h2>
+          <p class="tip" id="today-tip"></p>
+          <div class="today-status" id="today-status"></div>
+          <button class="btn btn-primary btn-xl" id="start-session" type="button">▶ Empezar</button>
+        </div>
+      </div>
+
+      <nav class="menu">
+        <button class="menu-item" data-go="print" type="button"><span>🖨️</span>Hojas para imprimir</button>
+        <button class="menu-item" data-go="learn" type="button"><span>🧮</span>Aprende el ábaco</button>
+        <button class="menu-item" data-go="parents" type="button"><span>👨‍👩‍👧</span>Padres</button>
+      </nav>
+    </section>
+
+    <!-- Sesión -->
+    <section class="view" id="view-session" hidden>
+      <div class="session-bar">
+        <button class="icon-btn" id="session-exit" type="button" aria-label="Salir">✕</button>
+        <ol class="progress" id="session-progress"></ol>
+        <div class="timer" id="session-timer">0:00</div>
+      </div>
+
+      <div class="card exercise-card" id="exercise-card">
+        <p class="eyebrow" id="exercise-instruction"></p>
+        <div id="exercise-body"></div>
+        <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+        <div class="exercise-actions" id="exercise-actions"></div>
+      </div>
+
+      <div class="keypad" id="keypad">
+        <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+        <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+        <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+        <button type="button" data-key="Backspace" class="key-soft" aria-label="Borrar">⌫</button>
+        <button type="button" data-key="0">0</button>
+        <button type="button" data-key="Enter" class="key-ok" aria-label="Comprobar">✓</button>
+      </div>
+
+      <details class="card helper" id="helper">
+        <summary>🧮 Usar el ábaco</summary>
+        <div class="helper-abacus" id="helper-abacus"></div>
+        <p class="step-text" id="helper-step" hidden></p>
+        <div class="row">
+          <button class="btn btn-soft" id="helper-clear" type="button">Limpiar</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- Resultado -->
+    <section class="view" id="view-result" hidden>
+      <div class="card result-card">
+        <div class="stars" id="result-stars"></div>
+        <h1 id="result-title">¡Terminaste!</h1>
+        <div class="result-stats">
+          <div><strong id="result-score"></strong><span>aciertos</span></div>
+          <div><strong id="result-time"></strong><span>tiempo</span></div>
+          <div><strong id="result-streak"></strong><span>🔥 racha</span></div>
+        </div>
+        <p class="level-message" id="result-level"></p>
+        <div class="row center">
+          <button class="btn btn-primary" data-go="home" type="button">Inicio</button>
+          <button class="btn btn-soft" id="result-more" type="button">Practicar más</button>
+        </div>
+      </div>
+      <div class="confetti" id="confetti" aria-hidden="true"></div>
+    </section>
+
+    <!-- Imprimir -->
+    <section class="view" id="view-print" hidden>
+      <div class="view-head">
+        <button class="icon-btn" data-go="home" type="button" aria-label="Volver">←</button>
+        <h1>Hojas para imprimir</h1>
+      </div>
+      <div class="card no-print">
+        <div class="form-grid">
+          <label>Nivel <select id="print-level"></select></label>
+          <label>Desde el día <input type="date" id="print-start"></label>
+          <label>Hojas (1 por día) <input type="number" id="print-pages" min="1" max="14" value="5"></label>
+          <label class="check"><input type="checkbox" id="print-answers" checked> Incluir hoja de respuestas</label>
+        </div>
+        <p class="muted">La hoja de cada día tiene los mismos ejercicios que la sesión en pantalla de ese día.</p>
+        <div class="row">
+          <button class="btn btn-primary" id="print-go" type="button">🖨️ Imprimir</button>
+        </div>
+      </div>
+
+      <div class="card no-print">
+        <h2>¿Hizo la hoja en papel?</h2>
+        <p class="muted">Regístrala para que cuente en la racha y en el progreso.</p>
+        <div class="form-grid">
+          <label>Fecha <input type="date" id="paper-date"></label>
+          <label>Aciertos <input type="number" id="paper-correct" min="0" max="50" value="10"></label>
+          <label>De <input type="number" id="paper-total" min="1" max="50" value="10"></label>
+          <label>Minutos <input type="number" id="paper-minutes" min="1" max="120" value="5"></label>
+        </div>
+        <div class="row">
+          <button class="btn btn-soft" id="paper-save" type="button">Guardar hoja</button>
+          <span class="muted" id="paper-msg" role="status"></span>
+        </div>
+      </div>
+
+      <div id="print-sheets" class="sheets"></div>
+    </section>
+
+    <!-- Aprende -->
+    <section class="view" id="view-learn" hidden>
+      <div class="view-head">
+        <button class="icon-btn" data-go="home" type="button" aria-label="Volver">←</button>
+        <h1>Aprende el ábaco</h1>
+      </div>
+
+      <div class="card">
+        <h2>Juega con el soroban</h2>
+        <p>Toca las cuentas para moverlas. <b>Las de abajo valen 1</b> y <b>la de arriba vale 5</b>. Solo cuentan las que tocan la barra del medio.</p>
+        <div class="free-number" id="free-number">0</div>
+        <div class="learn-abacus" id="free-abacus"></div>
+        <div class="row center"><button class="btn btn-soft" id="free-clear" type="button">Limpiar</button></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Amigos del 5</h2>
+          <p>Cuando no caben las cuentas de abajo, usamos la de arriba.</p>
+          <div class="friends"><span>1 + 4</span><span>2 + 3</span></div>
+          <p class="muted">Sumar 4 = pon 5 y quita 1. Sumar 3 = pon 5 y quita 2.</p>
+        </div>
+        <div class="card">
+          <h2>Amigos del 10</h2>
+          <p>Cuando no cabe en la varilla, llevamos 1 a la izquierda.</p>
+          <div class="friends"><span>1 + 9</span><span>2 + 8</span><span>3 + 7</span><span>4 + 6</span><span>5 + 5</span></div>
+          <p class="muted">Sumar 9 = quita 1 y suma 10. Sumar 7 = quita 3 y suma 10.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Míralo paso a paso</h2>
+        <div class="row">
+          <input type="number" class="text-input small" id="demo-a" value="4" min="0" max="999" aria-label="Primer número">
+          <select id="demo-op" class="text-input small" aria-label="Operación"><option value="+">+</option><option value="-">−</option></select>
+          <input type="number" class="text-input small" id="demo-b" value="3" min="0" max="999" aria-label="Segundo número">
+          <button class="btn btn-primary" id="demo-start" type="button">Ver</button>
+        </div>
+        <div class="row examples" id="demo-examples"></div>
+        <div class="learn-abacus" id="demo-abacus"></div>
+        <p class="step-text" id="demo-text">Escribe una suma o una resta y pulsa «Ver».</p>
+        <div class="row center">
+          <button class="btn btn-soft" id="demo-prev" type="button">◀ Atrás</button>
+          <button class="btn btn-soft" id="demo-next" type="button">Siguiente ▶</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Para los padres</h2>
+        <p>Video de referencia: <a href="https://youtu.be/0tN_roxCV3A" target="_blank" rel="noopener">El secreto del cálculo japonés: aprende soroban paso a paso</a>.</p>
+        <p class="muted">Postura: el ábaco plano sobre la mesa. El <b>pulgar</b> sube las cuentas de tierra; el <b>índice</b> las baja y mueve la cuenta del cielo. Se calcula de izquierda a derecha.</p>
+      </div>
+    </section>
+
+    <!-- Padres -->
+    <section class="view" id="view-parents" hidden>
+      <div class="view-head">
+        <button class="icon-btn" data-go="home" type="button" aria-label="Volver">←</button>
+        <h1>Panel de padres</h1>
+      </div>
+
+      <div class="card" id="parents-gate">
+        <h2>Solo para adultos</h2>
+        <p>¿Cuánto es <b id="gate-question"></b>?</p>
+        <div class="row">
+          <input type="number" class="text-input small" id="gate-answer" aria-label="Respuesta">
+          <button class="btn btn-primary" id="gate-go" type="button">Entrar</button>
+        </div>
+      </div>
+
+      <div id="parents-content" hidden>
+        <div class="card">
+          <h2>Perfil y nivel</h2>
+          <div class="form-grid">
+            <label>Nombre <input id="set-name" class="text-input" maxlength="20"></label>
+            <label>Nivel actual <select id="set-level"></select></label>
+            <label>Ejercicios por sesión
+              <select id="set-count"><option>5</option><option>10</option><option>15</option><option>20</option></select>
+            </label>
+          </div>
+          <label class="check"><input type="checkbox" id="set-sound"> Sonidos</label>
+          <label class="check"><input type="checkbox" id="set-rtl"> En sumas en columna, escribir la respuesta de derecha a izquierda (unidades primero)</label>
+          <label class="check"><input type="checkbox" id="set-labels"> Mostrar U, D, C debajo del ábaco</label>
+          <p class="muted" id="level-progress"></p>
+          <p class="suggestion" id="level-suggestion" hidden></p>
+        </div>
+
+        <div class="card">
+          <h2>Cómo avanza de nivel</h2>
+          <p class="muted">Como en Kumon, un nivel se domina con <b>2 sesiones seguidas</b> con al menos <b>90 % de aciertos</b> al primer intento y dentro del tiempo objetivo. Si no, se repite el nivel: repetir es parte del método. Puedes cambiar el nivel manualmente arriba.</p>
+          <ol class="level-list" id="level-list"></ol>
+        </div>
+
+        <div class="card">
+          <h2>Historial</h2>
+          <div class="table-wrap">
+            <table class="history">
+              <thead><tr><th>Fecha</th><th>Nivel</th><th>Aciertos</th><th>Tiempo</th><th>Dónde</th><th></th></tr></thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Copia de seguridad</h2>
+          <p class="muted">El progreso se guarda en este navegador. Exporta una copia para pasarla a otro dispositivo.</p>
+          <div class="row">
+            <button class="btn btn-soft" id="export-data" type="button">Exportar</button>
+            <label class="btn btn-soft file-btn">Importar<input type="file" id="import-data" accept="application/json"></label>
+            <button class="btn btn-danger" id="reset-data" type="button">Borrar todo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/curriculum.js"></script>
+  <script src="js/soroban.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
