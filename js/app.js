@@ -1,16 +1,23 @@
 /*
- * Ábaco – la aplicación: inicio con racha, sesión diaria, resultados,
- * hojas imprimibles, sección para aprender y panel de padres.
+ * Ábaco – la aplicación: inicio con racha, sesión diaria guiada por Mapi,
+ * calentamiento de caligrafía, hoja en papel con cronómetro y corrección,
+ * escribir números, hojas imprimibles, sección para aprender y panel de padres.
  */
 (function () {
   'use strict';
 
   const C = window.Curriculum;
+  const K = window.Caligrafia;
   const $ = id => document.getElementById(id);
   const STORE_KEY = 'abaco.v1';
   const AVATARS = ['🐼', '🦊', '🐰', '🐯', '🦄', '🐸', '🐨', '🐙'];
   const PRAISE = ['¡Muy bien!', '¡Genial!', '¡Excelente!', '¡Así se hace!', '¡Perfecto!', '¡Bravo!'];
   const WEEKDAYS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+  const CAL_ROUNDS = [
+    { style: 'guia', label: 'Con camino' },
+    { style: 'punteado', label: 'Con puntos' },
+    { style: 'vacio', label: 'Sin ayuda' }
+  ];
 
   /* ---------- Datos guardados ---------- */
 
@@ -20,7 +27,9 @@
       avatar: '🐼',
       levelId: C.LEVELS[0].id,
       levelStart: 0,
-      settings: { perSession: 10, sound: true, rtl: true, labels: true, answerMode: 'abaco' },
+      settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true, warmup: true },
+      calligraphy: {},
+      warmupDate: '',
       history: []
     };
   }
@@ -32,6 +41,7 @@
       if (saved && Array.isArray(saved.history)) {
         Object.assign(data, saved);
         data.settings = Object.assign(defaults().settings, saved.settings);
+        data.calligraphy = Object.assign({}, saved.calligraphy);
       }
     } catch (e) {
       // Sin almacenamiento disponible: la app funciona igual, sin recordar.
@@ -63,6 +73,8 @@
   }
 
   function today() { return dateKey(new Date()); }
+
+  function dayNumber(key) { return Math.round(parseKey(key).getTime() / 86400000); }
 
   function shortDate(key) { return parseKey(key).toLocaleDateString('es', { day: 'numeric', month: 'short' }); }
 
@@ -139,7 +151,7 @@
     return `Para pasar de nivel: 2 sesiones con 9 de cada 10 bien y menos de ${level.targetSec} s por ejercicio.`;
   }
 
-  /* ---------- Sonido ---------- */
+  /* ---------- Sonido y voz ---------- */
 
   let audioCtx = null;
   function playTones(freqs) {
@@ -165,19 +177,79 @@
   const soundTry = () => playTones([300]);
   const soundWin = () => playTones([523, 659, 784, 1047]);
 
+  // Voz de Mapi con la síntesis del navegador (funciona sin internet en la mayoría de equipos).
+  let voice = null;
+  function pickVoice() {
+    try {
+      const voices = window.speechSynthesis.getVoices().filter(v => /^es/i.test(v.lang));
+      voice = voices.find(v => /(CO|MX|US|419)/i.test(v.lang)) || voices[0] || null;
+    } catch (e) { voice = null; }
+  }
+  if ('speechSynthesis' in window) {
+    pickVoice();
+    window.speechSynthesis.onvoiceschanged = pickVoice;
+  }
+
+  function say(text) {
+    if (!data.settings.voice || !('speechSynthesis' in window) || !text) return;
+    try {
+      window.speechSynthesis.cancel();
+      const clean = text
+        .replace(/\p{Extended_Pictographic}/gu, '')
+        .replace(/\s−\s?/g, ' menos ')
+        .replace(/\s\+\s?/g, ' más ')
+        .replace(/×/g, ' por ');
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = voice ? voice.lang : 'es-ES';
+      if (voice) u.voice = voice;
+      u.rate = 0.95;
+      u.pitch = 1.12;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* sin voz */ }
+  }
+
+  function hush() {
+    try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) { /* sin voz */ }
+  }
+
+  // Mapi dice algo: globo de texto, voz y un gesto.
+  function mapi(bubbleId, text, mood, speech) {
+    const bubble = $(bubbleId);
+    bubble.textContent = text;
+    bubble.className = 'bubble' + (mood ? ' is-' + mood : '');
+    const mascot = bubble.parentElement.querySelector('.mascot');
+    if (mascot) {
+      mascot.classList.remove('is-happy', 'is-thinking');
+      void mascot.offsetWidth;
+      if (mood === 'ok') mascot.classList.add('is-happy');
+      if (mood === 'try' || mood === 'miss') mascot.classList.add('is-thinking');
+    }
+    say(speech === undefined ? text : speech);
+  }
+
+  function spokenTerms(terms) {
+    return terms.map((t, i) => (i === 0 ? '' : t < 0 ? ' menos ' : ' más ') + Math.abs(t)).join('');
+  }
+
   /* ---------- Navegación ---------- */
 
   let currentView = 'home';
   function show(view) {
     if (currentView === 'session' && view !== 'session') stopSession();
+    if (currentView === 'paper' && view !== 'paper') stopPaperTimer();
+    hush();
     currentView = view;
     document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'view-' + view; });
+    document.body.classList.toggle('in-session', view === 'session');
+    $('print-sheets').hidden = view !== 'print';
     window.scrollTo(0, 0);
     if (view === 'home') renderHome();
     if (view === 'print') renderPrint();
     if (view === 'learn') renderLearn();
     if (view === 'parents') renderParents();
     if (view === 'route') renderRoute();
+    if (view === 'paper') renderPaper();
+    if (view === 'calligraphy') renderCalligraphy();
   }
 
   document.addEventListener('click', e => {
@@ -190,6 +262,15 @@
 
   /* ---------- Inicio ---------- */
 
+  function homeMessage(streak) {
+    const name = data.name;
+    const days = n => `${n} ${n === 1 ? 'día' : 'días'} seguidos`;
+    if (!name) return '¡Hola! Soy Mapi y te voy a acompañar con el ábaco. ¿Cómo te llamas?';
+    if (streak.doneToday) return `¡Ya practicaste hoy, ${name}! Llevas ${days(streak.current)}. ¿Escribimos números?`;
+    if (streak.current) return `¡Hola, ${name}! Llevas ${days(streak.current)}. ¡No rompamos la racha!`;
+    return `¡Hola, ${name}! Toca el botón verde y practicamos juntos.`;
+  }
+
   function renderHome() {
     const level = C.getLevel(data.levelId);
     const streak = streakInfo();
@@ -197,13 +278,12 @@
     $('home-title').textContent = data.name ? `¡Hola, ${data.name}!` : '¡Hola!';
     $('home-date').textContent = new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
     $('onboarding').hidden = !!data.name;
+    $('home-bubble').textContent = homeMessage(streak);
+    $('home-bubble').className = 'bubble';
 
     $('streak-count').textContent = streak.current;
     $('streak-unit').textContent = streak.current === 1 ? 'día seguido' : 'días seguidos';
-    $('streak-flame').classList.toggle('is-off', !streak.doneToday);
-    $('streak-best').textContent = streak.doneToday
-      ? `¡Hoy ya practicaste! Mejor racha: ${streak.best}`
-      : streak.current ? '¡Practica hoy para no perder tu racha!' : 'Practica hoy para empezar tu racha.';
+    $('streak-best').textContent = streak.best ? `Mejor racha: ${streak.best}` : 'Cada día practicado sube una cuenta.';
 
     const week = $('week-strip');
     week.innerHTML = '';
@@ -217,18 +297,17 @@
     }
 
     $('today-level').textContent = `${level.id} · ${level.name}`;
-    $('today-tip').textContent = '💡 ' + level.tip;
     $('today-why').textContent = recommendation(level, levelStats(level.id));
     const todays = data.history.filter(h => h.date === today());
     if (todays.length) {
       const best = Math.max(...todays.map(h => starsFor(h.correct, h.total)));
-      $('today-status').textContent = `✅ Sesión de hoy hecha ${'⭐'.repeat(best)}`;
-      $('start-session').textContent = '▶ Practicar más';
+      $('today-status').textContent = `✅ Hecho hoy ${'⭐'.repeat(best)} · ¿otra ronda?`;
     } else {
       $('today-status').textContent = `${data.settings.perSession} ejercicios · unos 10 minutos`;
-      $('start-session').textContent = '▶ Empezar';
     }
   }
+
+  $('home-speak').addEventListener('click', () => say($('home-bubble').textContent));
 
   function renderAvatarPicker() {
     const box = $('onboarding-avatars');
@@ -249,6 +328,7 @@
     data.name = name;
     save();
     renderHome();
+    say(homeMessage(streakInfo()));
   });
 
   $('home-avatar').addEventListener('click', () => {
@@ -259,22 +339,27 @@
   });
 
   $('start-session').addEventListener('click', () => startSession());
+  $('paper-start').addEventListener('click', () => show('paper'));
 
   /* ---------- Sesión ---------- */
 
   let session = null;
   let cur = null;
   let helperSoroban = null;
+  let warmupTracer = null;
   let flashToken = 0;
   let playToken = 0;
 
-  // Prepara la sesión y muestra primero la pantalla «Antes de empezar».
+  const onScreen = () => data.settings.abacus === 'pantalla';
+
+  // Prepara la sesión: Mapi presenta el nivel y luego viene el calentamiento o los ejercicios.
   function startSession(levelId) {
     const level = C.getLevel(levelId || data.levelId);
     // El primer intento del día usa la misma semilla que la hoja impresa de ese día.
     const attempt = data.history.filter(h => h.date === today() && h.levelId === level.id && h.source === 'pantalla').length;
     session = {
       level,
+      review: level.id !== data.levelId,
       exercises: C.buildSheet(level.id, `${today()}|${level.id}|${attempt}`, data.settings.perSession),
       index: 0,
       results: [],
@@ -282,10 +367,7 @@
       timer: null
     };
     const mod = C.moduleOf(level.id);
-    $('briefing-module').textContent = `Módulo ${C.MODULES.indexOf(mod) + 1} · ${mod.title}` + (level.id !== data.levelId ? ' · repaso' : '');
-    $('briefing-level').textContent = `${level.id} · ${level.name}`;
-    $('briefing-objective').textContent = mod.objective;
-    $('briefing-tip').textContent = '💡 ' + level.tip;
+    $('briefing-level').textContent = `${level.id} · ${level.name}` + (session.review ? ' (repaso)' : '');
     const concepts = $('briefing-concepts');
     concepts.innerHTML = '';
     mod.concepts.forEach(c => {
@@ -293,38 +375,82 @@
       li.textContent = c;
       concepts.appendChild(li);
     });
-    setSessionStage('briefing');
+    setStage('briefing');
     show('session');
     $('session-timer').textContent = '0:00';
+    updateVoiceButton();
     renderProgress();
-    $('briefing-go').focus();
+    const hello = data.name ? `¡Vamos, ${data.name}! ` : '¡Vamos! ';
+    mapi('bubble', `${hello}Hoy: ${level.name}. ${level.tip}`);
   }
+
+  function setStage(stage) {
+    $('briefing').hidden = stage !== 'briefing';
+    $('warmup').hidden = stage !== 'warmup';
+    $('exercise').hidden = stage !== 'exercises';
+    $('keypad').hidden = true;
+    $('abacus-sheet').hidden = true;
+  }
+
+  $('briefing-go').addEventListener('click', () => {
+    if (data.settings.warmup && data.warmupDate !== today()) startWarmup();
+    else beginExercises();
+  });
+
+  /* --- Calentamiento de caligrafía --- */
+
+  function startWarmup() {
+    setStage('warmup');
+    const digit = K.digitOfDay(data.calligraphy, dayNumber(today()));
+    const rounds = ['guia', 'vacio'];
+    let r = 0;
+    const next = () => {
+      warmupTracer = new K.Tracer($('warmup-tracer'), {
+        digit,
+        style: rounds[r],
+        onDone: result => {
+          mapi('bubble', `${'⭐'.repeat(result.stars) || '💪'} ${result.hint}`, result.stars >= 2 ? 'ok' : 'try', result.hint);
+          if (result.stars === 0) {
+            setTimeout(() => warmupTracer && warmupTracer.clear(), 1200);
+            return;
+          }
+          if (rounds[r] === 'vacio') data.calligraphy[digit] = Math.max(data.calligraphy[digit] || 0, result.stars);
+          r++;
+          setTimeout(() => {
+            if (currentView !== 'session' || $('warmup').hidden) return;
+            if (r < rounds.length) {
+              next();
+              mapi('bubble', `Ahora sin camino: escribe el ${digit} tú, empezando en el punto verde.`);
+            } else {
+              data.warmupDate = today();
+              save();
+              beginExercises();
+            }
+          }, 1500);
+        }
+      });
+    };
+    next();
+    mapi('bubble', `Calentamiento: vamos a escribir el ${digit}. ${K.HOW[digit]}`);
+    warmupTracer.demo();
+  }
+
+  $('warmup-demo').addEventListener('click', () => warmupTracer && warmupTracer.demo());
+  $('warmup-clear').addEventListener('click', () => warmupTracer && warmupTracer.clear());
+  $('warmup-skip').addEventListener('click', () => {
+    data.warmupDate = today();
+    save();
+    beginExercises();
+  });
 
   function beginExercises() {
     session.start = Date.now();
+    clearInterval(session.timer);
     session.timer = setInterval(updateTimer, 1000);
     updateTimer();
-    setSessionStage('exercises');
+    setStage('exercises');
     loadExercise();
   }
-
-  function setSessionStage(stage) {
-    $('briefing').hidden = stage !== 'briefing';
-    $('exercise-card').hidden = stage === 'briefing';
-    if (stage === 'briefing') {
-      $('keypad').hidden = true;
-      $('helper').hidden = true;
-    }
-  }
-
-  $('briefing-go').addEventListener('click', beginExercises);
-
-  $('session-fullscreen').addEventListener('click', () => {
-    try {
-      if (document.fullscreenElement) document.exitFullscreen();
-      else document.documentElement.requestFullscreen();
-    } catch (e) { /* no disponible */ }
-  });
 
   function stopSession() {
     if (session) clearInterval(session.timer);
@@ -343,7 +469,7 @@
       const li = document.createElement('li');
       const r = session.results[i];
       if (r) li.className = r.correct ? 'is-ok' : 'is-miss';
-      else if (i === session.index) li.className = 'is-current';
+      else if (i === session.index && !$('exercise').hidden) li.className = 'is-current';
       list.appendChild(li);
     });
   }
@@ -354,28 +480,17 @@
 
   function loadExercise() {
     const ex = session.exercises[session.index];
-    const level = session.level;
     flashToken++;
     playToken++;
-    // Se responde moviendo las cuentas en «poner» y, si así está configurado, en los cálculos.
-    const useAbacus = ex.type === 'poner' || (ex.type === 'calculo' && data.settings.answerMode === 'abaco');
+    // Con ábaco en pantalla, «poner» y los cálculos se responden moviendo las cuentas.
+    const useAbacus = onScreen() && (ex.type === 'poner' || ex.type === 'calculo');
     cur = { ex, attempts: 0, answer: '', done: false, boxes: 0, rtl: false, soroban: null, locked: false, useAbacus };
-    $('feedback').textContent = '';
-    $('feedback').className = 'feedback';
     $('exercise-actions').innerHTML = '';
+    $('abacus-sheet').hidden = true;
     const body = $('exercise-body');
     body.innerHTML = '';
-
-    const instruction = {
-      leer: '¿Qué número muestra el ábaco?',
-      poner: 'Pon este número en el ábaco',
-      flash: 'Mira los números y calcula de memoria',
-      calculo: level.instruction
-    }[ex.type];
-    $('exercise-instruction').textContent = `(${session.index + 1}) ${instruction}`;
-    $('keypad').hidden = useAbacus;
-    $('helper').hidden = ex.type !== 'calculo' || useAbacus;
-    $('helper-step').hidden = true;
+    $('keypad').hidden = useAbacus || ex.type === 'poner';
+    renderProgress();
 
     if (ex.type === 'leer') {
       const holder = document.createElement('div');
@@ -384,12 +499,16 @@
       new window.Soroban(holder, { rods: ex.rods, value: ex.value, interactive: false, showLabels: data.settings.labels });
       cur.boxes = ex.rods;
       body.appendChild(answerRow());
+      mapi('bubble', '¿Qué número muestra el ábaco?');
     } else if (ex.type === 'poner') {
-      const target = document.createElement('div');
-      target.className = 'target-number';
-      target.textContent = ex.value;
-      body.appendChild(target);
-      addAbacusAnswer(body, ex);
+      body.appendChild(textSpan(String(ex.value), 'target-number'));
+      if (useAbacus) {
+        addAbacusAnswer(body, ex);
+        mapi('bubble', 'Pon este número en el ábaco y toca «¡Listo!».', null, `Pon el ${ex.value} en el ábaco.`);
+      } else {
+        addAction('¡Listo! ✓', 'btn-go btn-xl', showSelfCheck);
+        mapi('bubble', 'Pon este número en tu ábaco y toca «¡Listo!».', null, `Pon el ${ex.value} en tu ábaco.`);
+      }
     } else if (ex.type === 'flash') {
       const stage = document.createElement('div');
       stage.className = 'flash-stage';
@@ -399,6 +518,7 @@
       const row = answerRow();
       row.hidden = true;
       body.appendChild(row);
+      mapi('bubble', 'Mira los números y calcula de memoria.');
       playFlash();
     } else {
       const termLen = Math.max(...ex.terms.map(t => String(Math.abs(t)).length));
@@ -406,25 +526,16 @@
       cur.rtl = data.settings.rtl && termLen > 1;
       cur.boxes = Math.max(String(ex.answer).length, termLen + (ex.terms.slice(1).some(t => t > 0) ? 1 : 0));
       body.appendChild(buildOperation(ex, answerBoxes(cur.boxes)));
-      if (useAbacus) addAbacusAnswer(body, ex);
-      else setupHelper(ex);
+      const spoken = spokenTerms(ex.terms);
+      if (useAbacus) {
+        addAbacusAnswer(body, ex);
+        mapi('bubble', 'Mueve las cuentas y toca «¡Listo!».', null, `Mueve las cuentas: ${spoken}.`);
+      } else {
+        addAction('🧮 Ábaco en pantalla', 'btn-soft', () => openAbacusSheet(ex));
+        mapi('bubble', 'Hazlo en tu ábaco y escribe el resultado.', null, `Hazlo en tu ábaco: ${spoken}.`);
+      }
     }
     renderAnswer();
-  }
-
-  // Ábaco en el que se responde: se pulsa «¡Listo!» cuando muestra el resultado.
-  function addAbacusAnswer(body, ex) {
-    const holder = document.createElement('div');
-    holder.className = 'exercise-abacus';
-    body.appendChild(holder);
-    cur.soroban = new window.Soroban(holder, { rods: ex.rods, interactive: true, showLabels: data.settings.labels });
-    const step = document.createElement('p');
-    step.className = 'step-text';
-    step.id = 'exercise-step';
-    step.hidden = true;
-    body.appendChild(step);
-    addAction('¡Listo! ✓', 'btn-primary', check);
-    addAction('Limpiar', 'btn-soft', () => cur.soroban.clear());
   }
 
   function addAction(label, cls, fn) {
@@ -437,15 +548,57 @@
     return b;
   }
 
+  // Ábaco en el que se responde: se toca «¡Listo!» cuando muestra el resultado.
+  function addAbacusAnswer(body, ex) {
+    const holder = document.createElement('div');
+    holder.className = 'exercise-abacus';
+    body.appendChild(holder);
+    cur.soroban = new window.Soroban(holder, { rods: ex.rods, interactive: true, showLabels: data.settings.labels });
+    const step = document.createElement('p');
+    step.className = 'step-text';
+    step.id = 'exercise-step';
+    step.hidden = true;
+    body.appendChild(step);
+    addAction('¡Listo! ✓', 'btn-go', check);
+    addAction('Limpiar', 'btn-soft', () => cur.soroban.clear());
+  }
+
+  // Con ábaco real: se muestra cómo debe verse y ella compara con el suyo.
+  function showSelfCheck() {
+    const ex = cur.ex;
+    const body = $('exercise-body');
+    let holder = body.querySelector('.exercise-abacus');
+    if (!holder) {
+      holder = document.createElement('div');
+      holder.className = 'exercise-abacus';
+      body.appendChild(holder);
+    }
+    new window.Soroban(holder, { rods: ex.rods, value: ex.value, interactive: false, showLabels: data.settings.labels });
+    $('exercise-actions').innerHTML = '';
+    addAction('Sí, igualito ✓', 'btn-go', () => selfCheck(true));
+    addAction('No, lo arreglo', 'btn-soft', () => selfCheck(false));
+    mapi('bubble', '¿Tu ábaco se ve así?');
+  }
+
+  function selfCheck(same) {
+    if (same) { markCorrect(); return; }
+    cur.attempts++;
+    soundTry();
+    if (cur.attempts < 2) {
+      $('exercise-body').querySelector('.exercise-abacus').remove();
+      $('exercise-actions').innerHTML = '';
+      addAction('¡Listo! ✓', 'btn-go btn-xl', showSelfCheck);
+      mapi('bubble', 'Arréglalo en tu ábaco. ' + session.level.hint, 'try');
+    } else {
+      reveal(`Así se pone el ${cur.ex.value}. ¡La próxima te sale!`);
+    }
+  }
+
   function answerBoxes(n) {
     const wrap = document.createElement('span');
     wrap.className = 'answer-boxes';
     wrap.id = 'answer-boxes';
-    for (let i = 0; i < n; i++) {
-      const box = document.createElement('span');
-      box.className = 'answer-box';
-      wrap.appendChild(box);
-    }
+    for (let i = 0; i < n; i++) wrap.appendChild(textSpan('', 'answer-box'));
     return wrap;
   }
 
@@ -472,15 +625,13 @@
     const width = Math.max(answerNode.childElementCount || 0, ...ex.terms.map(t => String(Math.abs(t)).length));
     const col = document.createElement('div');
     col.className = 'op-column';
-    col.style.setProperty('--cols', width);
     ex.terms.forEach((t, i) => {
       const row = document.createElement('div');
       row.className = 'op-row';
       row.appendChild(textSpan(i === 0 ? '' : t < 0 ? '−' : '+', 'op-sign'));
-      const digits = String(Math.abs(t)).padStart(width, ' ');
       const cells = document.createElement('span');
       cells.className = 'op-cells';
-      for (const ch of digits) cells.appendChild(textSpan(ch.trim(), 'op-cell'));
+      for (const ch of String(Math.abs(t)).padStart(width, ' ')) cells.appendChild(textSpan(ch.trim(), 'op-cell'));
       row.appendChild(cells);
       col.appendChild(row);
     });
@@ -497,14 +648,14 @@
 
   function textSpan(text, cls) {
     const s = document.createElement('span');
-    s.className = cls;
+    if (cls) s.className = cls;
     s.textContent = text;
     return s;
   }
 
   function renderAnswer(revealed) {
     const wrap = $('answer-boxes');
-    if (!wrap) return;
+    if (!wrap || !cur) return;
     const text = revealed ? String(cur.ex.answer) : cur.answer;
     const boxes = [...wrap.children];
     const offset = boxes.length - text.length;
@@ -516,13 +667,17 @@
   }
 
   function handleKey(key) {
-    if (!cur || cur.locked) return;
+    if (!cur || cur.locked || $('exercise').hidden) return;
     if (cur.done) {
       if (key === 'Enter' && cur.waitingNext) nextExercise();
       return;
     }
-    if (key === 'Enter') { check(); return; }
-    if (cur.useAbacus) return;
+    const typed = !cur.useAbacus && cur.ex.type !== 'poner';
+    if (key === 'Enter') {
+      if (cur.useAbacus || typed) check();
+      return;
+    }
+    if (!typed) return;
     if (key === 'Backspace') {
       cur.answer = cur.rtl ? cur.answer.slice(1) : cur.answer.slice(0, -1);
     } else if (/^[0-9]$/.test(key) && cur.answer.length < cur.boxes) {
@@ -555,39 +710,42 @@
       if (cur.answer === '') return;
       given = parseInt(cur.answer, 10);
     }
-    const fb = $('feedback');
-    if (given === ex.answer) {
-      cur.done = true;
-      session.results[session.index] = { correct: cur.attempts === 0 };
-      fb.textContent = PRAISE[Math.floor(Math.random() * PRAISE.length)] + ' ⭐';
-      fb.className = 'feedback is-ok';
-      if (cur.soroban) cur.soroban.setInteractive(false);
-      renderAnswer();
-      soundOk();
-      renderProgress();
-      cur.locked = true;
-      setTimeout(nextExercise, 900);
-      return;
-    }
+    if (given === ex.answer) { markCorrect(); return; }
     cur.attempts++;
     soundTry();
-    $('exercise-card').classList.remove('shake');
-    void $('exercise-card').offsetWidth;
-    $('exercise-card').classList.add('shake');
+    const card = $('exercise');
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
     if (cur.attempts < 2) {
       // Pista específica del nivel, como guía para el segundo intento.
-      fb.textContent = 'Casi… ' + session.level.hint;
-      fb.className = 'feedback is-try';
+      mapi('bubble', 'Casi… ' + session.level.hint, 'try');
       cur.answer = '';
       renderAnswer();
       return;
     }
-    // Segundo error: se muestra la respuesta y cómo llegar a ella.
+    reveal(`Es ${ex.answer}. ¡La próxima te sale!`);
+  }
+
+  function markCorrect() {
+    cur.done = true;
+    session.results[session.index] = { correct: cur.attempts === 0 };
+    mapi('bubble', PRAISE[Math.floor(Math.random() * PRAISE.length)] + ' ⭐', 'ok');
+    if (cur.soroban) cur.soroban.setInteractive(false);
+    renderAnswer();
+    soundOk();
+    renderProgress();
+    cur.locked = true;
+    setTimeout(nextExercise, 1100);
+  }
+
+  // Segundo error: se muestra la respuesta y cómo llegar a ella.
+  function reveal(message) {
+    const ex = cur.ex;
     cur.done = true;
     cur.waitingNext = true;
     session.results[session.index] = { correct: false };
-    fb.textContent = `La respuesta es ${ex.answer}. ¡La próxima te sale!`;
-    fb.className = 'feedback is-miss';
+    mapi('bubble', message, 'miss');
     renderProgress();
     if (cur.soroban) {
       cur.soroban.setInteractive(false);
@@ -596,22 +754,31 @@
     renderAnswer(true);
     $('exercise-actions').innerHTML = '';
     if (ex.type === 'calculo') addAction('🧮 Ver cómo se hace', 'btn-soft', () => playExplanation(ex));
-    addAction('Siguiente ▶', 'btn-primary', nextExercise);
+    addAction('Siguiente ▶', 'btn-go', nextExercise);
   }
 
   function nextExercise() {
     session.index++;
     if (session.index >= session.exercises.length) finishSession();
-    else { renderProgress(); loadExercise(); }
+    else loadExercise();
   }
 
-  /* --- Ábaco de ayuda y explicación paso a paso --- */
+  /* --- Ábaco en pantalla y explicación paso a paso --- */
 
-  function setupHelper(ex) {
+  function openAbacusSheet(ex) {
+    $('abacus-sheet').hidden = false;
+    $('keypad').hidden = true;
+    $('helper-step').hidden = true;
     helperSoroban = new window.Soroban($('helper-abacus'), {
-      rods: ex.rods, interactive: true, showDigits: false, showLabels: data.settings.labels
+      rods: ex.rods, interactive: true, showLabels: data.settings.labels
     });
   }
+
+  $('abacus-sheet-close').addEventListener('click', () => {
+    playToken++;
+    $('abacus-sheet').hidden = true;
+    $('keypad').hidden = !cur || cur.useAbacus || cur.ex.type === 'poner';
+  });
 
   $('helper-clear').addEventListener('click', () => {
     playToken++;
@@ -619,21 +786,19 @@
     if (helperSoroban) { helperSoroban.highlight(null); helperSoroban.clear(); }
   });
 
-  // Anima la solución en el ábaco de respuesta o, si se respondió con teclado, en el de ayuda.
+  // Anima la solución en el ábaco de respuesta o, con ábaco real, en el ábaco en pantalla.
   function playExplanation(ex) {
     const token = ++playToken;
     const steps = C.explain(ex.terms);
     let soroban = cur.soroban;
     let text = $('exercise-step');
     if (!soroban) {
-      const helper = $('helper');
-      helper.hidden = false;
-      helper.open = true;
+      openAbacusSheet(ex);
       soroban = helperSoroban;
+      soroban.setInteractive(false);
       text = $('helper-step');
     }
     text.hidden = false;
-    text.scrollIntoView({ behavior: 'smooth', block: 'center' });
     let i = 0;
     (function step() {
       if (token !== playToken) return;
@@ -641,7 +806,8 @@
       soroban.setValue(s.value);
       soroban.highlight(s.place);
       text.textContent = s.text;
-      if (++i < steps.length) setTimeout(step, 2600);
+      say(s.text);
+      if (++i < steps.length) setTimeout(step, 3200);
     })();
   }
 
@@ -678,6 +844,28 @@
     })();
   }
 
+  /* --- Barra de la sesión --- */
+
+  function updateVoiceButton() {
+    $('session-voice').classList.toggle('is-off', !data.settings.voice);
+    $('session-voice').textContent = data.settings.voice ? '🔊' : '🔇';
+  }
+
+  $('session-voice').addEventListener('click', () => {
+    data.settings.voice = !data.settings.voice;
+    save();
+    updateVoiceButton();
+    if (data.settings.voice) say($('bubble').textContent);
+    else hush();
+  });
+
+  $('session-fullscreen').addEventListener('click', () => {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } catch (e) { /* no disponible */ }
+  });
+
   $('session-exit').addEventListener('click', () => {
     if (window.confirm('¿Salir de la sesión? No se guardará.')) show('home');
   });
@@ -688,20 +876,26 @@
     stopSession();
     const total = session.exercises.length;
     const correct = session.results.filter(r => r && r.correct).length;
-    const seconds = elapsed();
-    const isReview = session.level.id !== data.levelId;
-    const { entry, levelUp, stats } = recordSession({ levelId: session.level.id, correct, total, seconds, source: 'pantalla' });
+    showResult({ levelId: session.level.id, correct, total, seconds: elapsed(), source: 'pantalla', review: session.review });
+  }
+
+  function showResult({ levelId, correct, total, seconds, source, review }) {
+    const { entry, levelUp, stats } = recordSession({ levelId, correct, total, seconds, source });
     const stars = starsFor(correct, total);
     $('result-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
-    $('result-title').textContent = stars === 3 ? '¡Increíble!' : stars === 2 ? '¡Muy bien!' : '¡Buen trabajo!';
+    const title = stars === 3 ? '¡Increíble!' : stars === 2 ? '¡Muy bien!' : '¡Buen trabajo!';
+    $('result-title').textContent = title;
     $('result-score').textContent = `${correct}/${total}`;
     $('result-time').textContent = formatTime(seconds);
     $('result-streak').textContent = streakInfo().current;
-    $('result-level').textContent = levelMessage(entry, levelUp, stats, isReview);
-    $('result-more').dataset.level = isReview ? session.level.id : '';
+    const message = levelMessage(entry, levelUp, stats, review);
+    $('result-level').textContent = message;
+    $('result-more').dataset.level = review ? levelId : '';
+    $('result-more').hidden = source === 'papel';
     show('result');
+    say(`${title} ${correct} de ${total}. ${message}`);
     soundWin();
-    confetti(stars === 3 || levelUp ? 60 : 25);
+    confetti(stars === 3 || levelUp ? 70 : 30);
   }
 
   function levelMessage(entry, levelUp, stats, isReview) {
@@ -717,79 +911,14 @@
 
   $('result-more').addEventListener('click', e => startSession(e.currentTarget.dataset.level || undefined));
 
-  /* ---------- Mi camino ---------- */
-
-  function statTile(label, value) {
-    const div = document.createElement('div');
-    div.appendChild(textSpan(value, 'stat-value'));
-    div.appendChild(textSpan(label, 'stat-label'));
-    return div;
-  }
-
-  function renderRoute() {
-    const level = C.getLevel(data.levelId);
-    const idx = C.levelIndex(level.id);
-    const total = C.LEVELS.length;
-    const stats = levelStats(level.id);
-    $('route-summary').textContent = `Nivel ${idx + 1} de ${total} · ${level.id} ${level.name}`;
-    $('route-bar').style.width = Math.round((100 * idx) / total) + '%';
-    const tiles = $('route-stats');
-    tiles.innerHTML = '';
-    tiles.appendChild(statTile('Precisión', stats.accuracy === null ? '—' : stats.accuracy + ' %'));
-    tiles.appendChild(statTile('Constancia', stats.consistency === null ? '—' : stats.consistency + ' %'));
-    tiles.appendChild(statTile('Prácticas', String(stats.practices)));
-    tiles.appendChild(statTile('Tiempo medio', stats.avgSeconds === null ? '—' : stats.avgSeconds + ' s'));
-    $('route-rule').textContent = recommendation(level, stats);
-
-    const box = $('route-modules');
-    box.innerHTML = '';
-    C.MODULES.forEach((mod, m) => {
-      const card = document.createElement('div');
-      card.className = 'card module';
-      const first = C.levelIndex(mod.levels[0].id);
-      const last = C.levelIndex(mod.levels[mod.levels.length - 1].id);
-      card.classList.toggle('is-done', last < idx);
-      card.classList.toggle('is-locked', first > idx);
-      const eyebrow = textSpan(`Módulo ${m + 1}` + (last < idx ? ' · completado ✅' : first > idx ? ' · 🔒' : ' · en curso'), 'eyebrow');
-      card.appendChild(eyebrow);
-      const h = document.createElement('h2');
-      h.textContent = mod.title;
-      card.appendChild(h);
-      card.appendChild(textSpan(mod.objective, 'muted module-objective'));
-      const list = document.createElement('ol');
-      list.className = 'path';
-      mod.levels.forEach(l => {
-        const i = C.levelIndex(l.id);
-        const li = document.createElement('li');
-        li.className = i < idx ? 'is-done' : i === idx ? 'is-current' : 'is-locked';
-        li.appendChild(textSpan(i < idx ? '✓' : i === idx ? '★' : '🔒', 'path-dot'));
-        const info = document.createElement('div');
-        info.className = 'path-info';
-        info.appendChild(textSpan(`${l.id} · ${l.name}`, 'path-name'));
-        info.appendChild(textSpan(l.tip, 'path-tip'));
-        li.appendChild(info);
-        if (i <= idx) {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'btn ' + (i === idx ? 'btn-primary' : 'btn-soft');
-          btn.textContent = i === idx ? '▶ Practicar' : 'Repasar';
-          btn.addEventListener('click', () => startSession(l.id));
-          li.appendChild(btn);
-        }
-        list.appendChild(li);
-      });
-      card.appendChild(list);
-      box.appendChild(card);
-    });
-  }
-
+  // Confeti de cuentas de colores.
   function confetti(n) {
     const box = $('confetti');
     box.innerHTML = '';
-    const pieces = ['⭐', '🎉', '✨', '🟠', '🟣', '🔵', '🟢'];
+    const colors = ['var(--honey)', 'var(--tomato)', 'var(--leaf)', 'var(--berry)', 'var(--wood)'];
     for (let i = 0; i < n; i++) {
       const s = document.createElement('span');
-      s.textContent = pieces[i % pieces.length];
+      s.style.background = colors[i % colors.length];
       s.style.left = Math.random() * 100 + '%';
       s.style.animationDelay = Math.random() * 0.8 + 's';
       s.style.animationDuration = 1.8 + Math.random() * 1.4 + 's';
@@ -797,6 +926,200 @@
     }
     setTimeout(() => { box.innerHTML = ''; }, 4000);
   }
+
+  /* ---------- Hoja en papel: imprimir, cronometrar y corregir ---------- */
+
+  let paper = null;
+
+  // Los mismos 10 ejercicios que la hoja impresa de hoy.
+  function todaysSheet() {
+    return C.buildSheet(data.levelId, `${today()}|${data.levelId}|0`, 10);
+  }
+
+  function renderPaper() {
+    stopPaperTimer();
+    paper = { exercises: todaysSheet(), wrong: new Set(), seconds: 0, timer: null, start: 0 };
+    const level = C.getLevel(data.levelId);
+    $('paper-level').textContent = `${level.id} · ${level.name} · ${new Date().toLocaleDateString('es')}`;
+    $('paper-step-1').hidden = false;
+    $('paper-step-2').hidden = true;
+    $('paper-step-3').hidden = true;
+    $('paper-go').hidden = false;
+    $('paper-stop').hidden = true;
+    $('paper-timer').textContent = '0:00';
+    mapi('paper-bubble', 'Imprime la hoja de hoy o usa la que ya tienes. ¡Trabaja con tu ábaco y tu lápiz!', null, '');
+  }
+
+  $('paper-print').addEventListener('click', () => {
+    const box = $('print-sheets');
+    box.innerHTML = '';
+    box.appendChild(buildSheet(C.getLevel(data.levelId), today(), 1, paper.exercises, true));
+    window.print();
+  });
+
+  $('paper-ready').addEventListener('click', () => {
+    $('paper-step-1').hidden = true;
+    $('paper-step-2').hidden = false;
+    mapi('paper-bubble', 'Cuando tengas listos tu ábaco y tu lápiz, toca el botón verde.');
+  });
+
+  $('paper-go').addEventListener('click', () => {
+    paper.start = Date.now();
+    paper.timer = setInterval(() => {
+      paper.seconds = Math.round((Date.now() - paper.start) / 1000);
+      $('paper-timer').textContent = formatTime(paper.seconds);
+    }, 1000);
+    $('paper-go').hidden = true;
+    $('paper-stop').hidden = false;
+    mapi('paper-bubble', '¡A trabajar! Escribe bonito cada número. Cuando termines, toca «¡Terminé!».');
+  });
+
+  function stopPaperTimer() {
+    if (paper && paper.timer) {
+      clearInterval(paper.timer);
+      paper.timer = null;
+    }
+  }
+
+  $('paper-stop').addEventListener('click', () => {
+    stopPaperTimer();
+    paper.seconds = Math.max(1, Math.round((Date.now() - paper.start) / 1000));
+    $('paper-step-2').hidden = true;
+    $('paper-step-3').hidden = false;
+    renderPaperList();
+    mapi('paper-bubble', `¡Terminaste en ${formatTime(paper.seconds)}! Ahora revisemos juntos.`);
+  });
+
+  function exerciseText(ex) {
+    if (ex.type === 'leer') return 'Leer el ábaco';
+    if (ex.type === 'poner') return `Poner el ${ex.value}`;
+    return ex.terms.map((t, i) => (i === 0 ? '' : t < 0 ? ' − ' : ' + ') + Math.abs(t)).join('') + ' =';
+  }
+
+  function renderPaperList() {
+    const list = $('paper-list');
+    list.innerHTML = '';
+    paper.exercises.forEach((ex, i) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.appendChild(textSpan(`(${i + 1}) ${exerciseText(ex)}`));
+      const right = document.createElement('span');
+      if (ex.type !== 'poner') {
+        const answer = document.createElement('b');
+        answer.textContent = ex.answer;
+        right.appendChild(answer);
+      }
+      right.appendChild(textSpan(' ✓', 'mark'));
+      b.appendChild(right);
+      b.addEventListener('click', () => {
+        if (paper.wrong.has(i)) paper.wrong.delete(i);
+        else paper.wrong.add(i);
+        b.classList.toggle('is-wrong', paper.wrong.has(i));
+        b.querySelector('.mark').textContent = paper.wrong.has(i) ? ' ✗' : ' ✓';
+        updatePaperScore();
+      });
+      li.appendChild(b);
+      list.appendChild(li);
+    });
+    updatePaperScore();
+  }
+
+  function updatePaperScore() {
+    const total = paper.exercises.length;
+    $('paper-score').textContent = `${total - paper.wrong.size} de ${total} bien`;
+  }
+
+  $('paper-save').addEventListener('click', () => {
+    const total = paper.exercises.length;
+    showResult({ levelId: data.levelId, correct: total - paper.wrong.size, total, seconds: paper.seconds, source: 'papel', review: false });
+  });
+
+  /* ---------- Escribir números ---------- */
+
+  let cal = { digit: null, round: 0, tracer: null, stars: [] };
+
+  function renderCalligraphy() {
+    const digit = cal.digit === null ? K.digitOfDay(data.calligraphy, dayNumber(today())) : cal.digit;
+    startCalDigit(digit, false);
+  }
+
+  function renderDigitPicker() {
+    const box = $('cal-digits');
+    box.innerHTML = '';
+    for (let d = 0; d <= 9; d++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = d === cal.digit ? 'is-selected' : '';
+      b.appendChild(document.createTextNode(String(d)));
+      const stars = document.createElement('small');
+      stars.textContent = '★'.repeat(data.calligraphy[d] || 0);
+      b.appendChild(stars);
+      b.setAttribute('aria-label', `Número ${d}`);
+      b.addEventListener('click', () => startCalDigit(d, true));
+      box.appendChild(b);
+    }
+  }
+
+  function startCalDigit(d, speak) {
+    cal = { digit: d, round: 0, tracer: null, stars: [] };
+    renderDigitPicker();
+    startCalRound();
+    const text = `Vamos a escribir el ${d}. ${K.HOW[d]}`;
+    if (speak) mapi('cal-bubble', text);
+    else { $('cal-bubble').textContent = text; $('cal-bubble').className = 'bubble'; }
+    cal.tracer.demo();
+  }
+
+  function renderCalRounds() {
+    const box = $('cal-rounds');
+    box.innerHTML = '';
+    CAL_ROUNDS.forEach((r, i) => {
+      const s = textSpan((cal.stars[i] ? '⭐'.repeat(cal.stars[i]) + ' ' : '') + r.label);
+      s.className = i === cal.round ? 'is-current' : i < cal.round ? 'is-done' : '';
+      box.appendChild(s);
+    });
+  }
+
+  function startCalRound() {
+    renderCalRounds();
+    cal.tracer = new K.Tracer($('cal-tracer'), {
+      digit: cal.digit,
+      style: CAL_ROUNDS[cal.round].style,
+      onDone: result => {
+        const label = '⭐'.repeat(result.stars) || '💪';
+        if (result.stars === 0) {
+          mapi('cal-bubble', `${label} ${result.hint}`, 'try', result.hint);
+          setTimeout(() => cal.tracer.clear(), 1200);
+          return;
+        }
+        cal.stars[cal.round] = result.stars;
+        cal.round++;
+        if (cal.round < CAL_ROUNDS.length) {
+          mapi('cal-bubble', `${label} ${result.hint} Ahora: ${CAL_ROUNDS[cal.round].label.toLowerCase()}.`, 'ok');
+          setTimeout(() => { if (currentView === 'calligraphy') startCalRound(); }, 1500);
+        } else {
+          const best = Math.round(cal.stars.reduce((a, b) => a + b, 0) / cal.stars.length);
+          data.calligraphy[cal.digit] = Math.max(data.calligraphy[cal.digit] || 0, best);
+          save();
+          renderCalRounds();
+          renderDigitPicker();
+          mapi('cal-bubble', `${'⭐'.repeat(best)} ¡Terminaste el ${cal.digit}! Elige otro número o repite este.`, 'ok');
+          soundWin();
+        }
+      }
+    });
+  }
+
+  $('cal-demo').addEventListener('click', () => cal.tracer && cal.tracer.demo());
+  $('cal-clear').addEventListener('click', () => cal.tracer && cal.tracer.clear());
+  $('cal-print').addEventListener('click', () => {
+    show('print');
+    $('print-kind').value = 'caligrafia';
+    $('print-digit').value = String(cal.digit);
+    syncPrintKind();
+    buildSheets();
+  });
 
   /* ---------- Hojas imprimibles ---------- */
 
@@ -818,36 +1141,54 @@
     select.value = data.levelId;
   }
 
+  let printReady = false;
   function renderPrint() {
-    fillLevelSelect($('print-level'));
-    $('print-start').value = today();
-    $('paper-date').value = today();
-    $('paper-total').value = data.settings.perSession;
-    $('paper-correct').value = data.settings.perSession;
-    $('paper-msg').textContent = '';
+    if (!printReady) {
+      fillLevelSelect($('print-level'));
+      $('print-start').value = today();
+      printReady = true;
+    }
+    syncPrintKind();
     buildSheets();
   }
 
-  ['print-level', 'print-start', 'print-pages', 'print-answers'].forEach(id => $(id).addEventListener('change', buildSheets));
+  function syncPrintKind() {
+    const kind = $('print-kind').value;
+    document.querySelectorAll('#view-print [data-kind]').forEach(n => { n.hidden = n.dataset.kind !== kind; });
+  }
+
+  ['print-kind', 'print-level', 'print-start', 'print-pages', 'print-answers', 'print-warmup', 'print-digit'].forEach(id => {
+    $(id).addEventListener('change', () => { syncPrintKind(); buildSheets(); });
+  });
 
   function buildSheets() {
+    const box = $('print-sheets');
+    box.innerHTML = '';
+    if ($('print-kind').value === 'caligrafia') {
+      const choice = $('print-digit').value;
+      if (choice === 'all') {
+        box.appendChild(buildCalligraphySheet([0, 1, 2, 3, 4], 'números del 0 al 4'));
+        box.appendChild(buildCalligraphySheet([5, 6, 7, 8, 9], 'números del 5 al 9'));
+      } else {
+        box.appendChild(buildCalligraphySheet([Number(choice)], `el número ${choice}`));
+      }
+      return;
+    }
     const levelId = $('print-level').value;
     const level = C.getLevel(levelId);
     const start = $('print-start').value || today();
     const pages = Math.min(14, Math.max(1, parseInt($('print-pages').value, 10) || 1));
-    const box = $('print-sheets');
-    box.innerHTML = '';
     const keys = [];
     for (let p = 0; p < pages; p++) {
       const date = addDays(start, p);
       const exercises = C.buildSheet(levelId, `${date}|${levelId}|0`, 10);
       keys.push({ date, exercises });
-      box.appendChild(buildSheet(level, date, p + 1, exercises));
+      box.appendChild(buildSheet(level, date, p + 1, exercises, $('print-warmup').checked));
     }
     if ($('print-answers').checked) box.appendChild(buildAnswerSheet(level, keys));
   }
 
-  function sheetHeader(level, date, n) {
+  function sheetHeader(code, title, date, label) {
     const head = document.createElement('header');
     head.className = 'sheet-head';
     head.innerHTML = `
@@ -860,24 +1201,35 @@
         <div>Fecha <span class="line date"></span></div>
         <div>Tiempo <span class="line">:</span></div>
       </div>`;
-    head.querySelector('b').textContent = level.id;
-    head.querySelector('.sheet-code span').textContent = n ? `hoja ${n}` : 'respuestas';
-    head.querySelector('.sheet-title').textContent = level.name;
+    head.querySelector('b').textContent = code;
+    head.querySelector('.sheet-code span').textContent = label;
+    head.querySelector('.sheet-title').textContent = title;
     head.querySelector('.date').textContent = date ? parseKey(date).toLocaleDateString('es') : '';
-    if (!n) head.querySelector('.sheet-fields').remove();
+    if (label === 'respuestas') head.querySelector('.sheet-fields').remove();
     return head;
   }
 
-  function buildSheet(level, date, n, exercises) {
+  function buildSheet(level, date, n, exercises, warmup) {
     const sheet = document.createElement('article');
     sheet.className = 'sheet';
-    sheet.appendChild(sheetHeader(level, date, n));
+    sheet.appendChild(sheetHeader(level.id, level.name, date, `hoja ${n}`));
+
+    if (warmup) {
+      // Fila de caligrafía del día: el modelo, para repasar y para escribir sin ayuda.
+      const digit = K.digitOfDay(data.calligraphy, dayNumber(date));
+      const row = document.createElement('div');
+      row.className = 'sheet-warmup';
+      row.appendChild(textSpan(`✏️ Escribe el ${digit}:`));
+      ['modelo', 'punteado', 'punteado', 'punteado', 'tenue', 'tenue', 'vacio', 'vacio', 'vacio'].forEach(style => row.appendChild(K.cellSvg(digit, style)));
+      sheet.appendChild(row);
+    }
+
     const kinds = new Set(exercises.map(e => e.type));
     const instruction = document.createElement('p');
     instruction.className = 'sheet-instruction';
     instruction.textContent = '◆ ' + (kinds.has('leer') || kinds.has('poner')
       ? 'Escribe el número que muestra el ábaco, o colorea las cuentas del número.'
-      : kinds.has('flash') ? 'Calcula de memoria, sin ábaco:' : level.instruction + ':');
+      : kinds.has('flash') ? 'Calcula de memoria, sin ábaco:' : level.instruction + ' con tu ábaco:');
     sheet.appendChild(instruction);
 
     const grid = document.createElement('div');
@@ -899,8 +1251,8 @@
         const blanks = document.createElement('span');
         blanks.className = 'answer-boxes paper';
         const termLen = Math.max(...ex.terms.map(t => String(Math.abs(t)).length));
-        const n = Math.max(String(ex.answer).length, termLen + (ex.terms.slice(1).some(t => t > 0) ? 1 : 0));
-        for (let k = 0; k < n; k++) blanks.appendChild(textSpan('', 'answer-box'));
+        const count = Math.max(String(ex.answer).length, termLen + (ex.terms.slice(1).some(t => t > 0) ? 1 : 0));
+        for (let k = 0; k < count; k++) blanks.appendChild(textSpan('', 'answer-box'));
         content.appendChild(buildOperation(ex, blanks));
       }
       item.appendChild(content);
@@ -918,7 +1270,7 @@
   function buildAnswerSheet(level, keys) {
     const sheet = document.createElement('article');
     sheet.className = 'sheet answers';
-    sheet.appendChild(sheetHeader(level, null, 0));
+    sheet.appendChild(sheetHeader(level.id, level.name, null, 'respuestas'));
     keys.forEach(({ date, exercises }, p) => {
       const block = document.createElement('div');
       block.className = 'answer-block';
@@ -937,21 +1289,46 @@
     return sheet;
   }
 
-  $('print-go').addEventListener('click', () => { buildSheets(); window.print(); });
-
-  $('paper-save').addEventListener('click', () => {
-    const total = Math.max(1, parseInt($('paper-total').value, 10) || 1);
-    const correct = Math.min(total, Math.max(0, parseInt($('paper-correct').value, 10) || 0));
-    const minutes = Math.max(1, parseInt($('paper-minutes').value, 10) || 1);
-    const { levelUp } = recordSession({
-      date: $('paper-date').value || today(),
-      levelId: data.levelId,
-      correct, total,
-      seconds: minutes * 60,
-      source: 'papel'
+  // Hoja de caligrafía estilo Kumon 4A: modelo con orden de trazo, repasar con puntos,
+  // puntos cada vez más tenues y, al final, escribir sin ayuda desde el punto de inicio.
+  function buildCalligraphySheet(digits, title) {
+    const sheet = document.createElement('article');
+    sheet.className = 'sheet';
+    sheet.appendChild(sheetHeader('✏️', 'Caligrafía: ' + title, null, 'números'));
+    const instruction = document.createElement('p');
+    instruction.className = 'sheet-instruction';
+    instruction.textContent = '◆ Empieza en el punto y sigue la flecha. Repasa los puntos y luego escribe tú.';
+    sheet.appendChild(instruction);
+    const rows = document.createElement('div');
+    rows.className = 'cal-rows';
+    const patterns = digits.length === 1
+      ? [
+        ['modelo', 'punteado', 'punteado', 'punteado', 'punteado', 'punteado', 'punteado', 'punteado'],
+        ['punteado', 'punteado', 'punteado', 'punteado', 'tenue', 'tenue', 'tenue', 'tenue'],
+        ['tenue', 'tenue', 'tenue', 'tenue', 'tenue', 'tenue', 'tenue', 'tenue'],
+        ['tenue', 'tenue', 'tenue', 'tenue', 'vacio', 'vacio', 'vacio', 'vacio'],
+        ['vacio', 'vacio', 'vacio', 'vacio', 'vacio', 'vacio', 'vacio', 'vacio'],
+        ['vacio', 'vacio', 'vacio', 'vacio', 'vacio', 'vacio', 'vacio', 'vacio']
+      ]
+      : [['modelo', 'punteado', 'punteado', 'punteado', 'tenue', 'vacio', 'vacio']];
+    digits.forEach(d => {
+      patterns.forEach(pattern => {
+        const row = document.createElement('div');
+        row.className = 'cal-row';
+        row.style.gridTemplateColumns = `repeat(${pattern.length}, 1fr)`;
+        pattern.forEach(style => row.appendChild(K.cellSvg(d, style)));
+        rows.appendChild(row);
+      });
     });
-    $('paper-msg').textContent = `¡Guardada! Racha: ${streakInfo().current} 🔥` + (levelUp ? ` · Nuevo nivel: ${levelUp.id}` : '');
-  });
+    sheet.appendChild(rows);
+    const foot = document.createElement('footer');
+    foot.className = 'sheet-foot';
+    foot.textContent = 'Encierra tu número más bonito de cada fila      ·      Mi Ábaco';
+    sheet.appendChild(foot);
+    return sheet;
+  }
+
+  $('print-go').addEventListener('click', () => { buildSheets(); window.print(); });
 
   /* ---------- Aprende ---------- */
 
@@ -960,27 +1337,26 @@
   let demo = { steps: [], i: 0 };
 
   function renderLearn() {
-    if (!freeSoroban) {
-      freeSoroban = new window.Soroban($('free-abacus'), {
-        rods: 4, showDigits: true, showLabels: true,
-        onChange: v => { $('free-number').textContent = v; }
+    if (freeSoroban) return;
+    freeSoroban = new window.Soroban($('free-abacus'), {
+      rods: 4, showDigits: true, showLabels: true,
+      onChange: v => { $('free-number').textContent = v; }
+    });
+    const examples = [[2, 2], [4, 3], [7, 5], [6, -2], [12, -5], [235, 149]];
+    examples.forEach(([a, b]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip';
+      btn.textContent = `${a} ${b < 0 ? '−' : '+'} ${Math.abs(b)}`;
+      btn.addEventListener('click', () => {
+        $('demo-a').value = a;
+        $('demo-op').value = b < 0 ? '-' : '+';
+        $('demo-b').value = Math.abs(b);
+        startDemo();
       });
-      const examples = [[2, 2], [4, 3], [7, 5], [6, -2], [12, -5], [235, 149]];
-      examples.forEach(([a, b]) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'chip';
-        btn.textContent = `${a} ${b < 0 ? '−' : '+'} ${Math.abs(b)}`;
-        btn.addEventListener('click', () => {
-          $('demo-a').value = a;
-          $('demo-op').value = b < 0 ? '-' : '+';
-          $('demo-b').value = Math.abs(b);
-          startDemo();
-        });
-        $('demo-examples').appendChild(btn);
-      });
-      demoSoroban = new window.Soroban($('demo-abacus'), { rods: 4, showDigits: true, showLabels: true, interactive: false });
-    }
+      $('demo-examples').appendChild(btn);
+    });
+    demoSoroban = new window.Soroban($('demo-abacus'), { rods: 4, showDigits: true, showLabels: true, interactive: false });
   }
 
   $('free-clear').addEventListener('click', () => freeSoroban.clear());
@@ -1012,6 +1388,7 @@
     demoSoroban.setValue(s.value);
     demoSoroban.highlight(s.place);
     $('demo-text').textContent = `Paso ${demo.i + 1} de ${demo.steps.length}: ${s.text}`;
+    say(s.text);
     $('demo-prev').disabled = demo.i === 0;
     $('demo-next').disabled = demo.i >= demo.steps.length - 1;
   }
@@ -1019,6 +1396,70 @@
   $('demo-start').addEventListener('click', startDemo);
   $('demo-prev').addEventListener('click', () => { if (demo.i > 0) { demo.i--; showDemoStep(); } });
   $('demo-next').addEventListener('click', () => { if (demo.i < demo.steps.length - 1) { demo.i++; showDemoStep(); } });
+
+  /* ---------- Mi camino ---------- */
+
+  function statTile(label, value) {
+    const div = document.createElement('div');
+    div.appendChild(textSpan(value, 'stat-value'));
+    div.appendChild(textSpan(label, 'stat-label'));
+    return div;
+  }
+
+  function renderRoute() {
+    const level = C.getLevel(data.levelId);
+    const idx = C.levelIndex(level.id);
+    const total = C.LEVELS.length;
+    const stats = levelStats(level.id);
+    $('route-summary').textContent = `Nivel ${idx + 1} de ${total} · ${level.id} ${level.name}`;
+    $('route-bar').style.width = Math.round((100 * idx) / total) + '%';
+    const tiles = $('route-stats');
+    tiles.innerHTML = '';
+    tiles.appendChild(statTile('Precisión', stats.accuracy === null ? '—' : stats.accuracy + ' %'));
+    tiles.appendChild(statTile('Constancia', stats.consistency === null ? '—' : stats.consistency + ' %'));
+    tiles.appendChild(statTile('Prácticas', String(stats.practices)));
+    tiles.appendChild(statTile('Tiempo medio', stats.avgSeconds === null ? '—' : stats.avgSeconds + ' s'));
+    $('route-rule').textContent = recommendation(level, stats);
+
+    const box = $('route-modules');
+    box.innerHTML = '';
+    C.MODULES.forEach((mod, m) => {
+      const card = document.createElement('div');
+      card.className = 'panel module';
+      const first = C.levelIndex(mod.levels[0].id);
+      const last = C.levelIndex(mod.levels[mod.levels.length - 1].id);
+      card.classList.toggle('is-locked', first > idx);
+      card.appendChild(textSpan(`Módulo ${m + 1}` + (last < idx ? ' · completado ✅' : first > idx ? ' · 🔒' : ' · en curso'), 'eyebrow'));
+      const h = document.createElement('h2');
+      h.textContent = mod.title;
+      card.appendChild(h);
+      card.appendChild(textSpan(mod.objective, 'muted module-objective'));
+      const list = document.createElement('ol');
+      list.className = 'path';
+      mod.levels.forEach(l => {
+        const i = C.levelIndex(l.id);
+        const li = document.createElement('li');
+        li.className = i < idx ? 'is-done' : i === idx ? 'is-current' : 'is-locked';
+        li.appendChild(textSpan(i < idx ? '✓' : i === idx ? '★' : '🔒', 'path-dot'));
+        const info = document.createElement('div');
+        info.className = 'path-info';
+        info.appendChild(textSpan(`${l.id} · ${l.name}`, 'path-name'));
+        info.appendChild(textSpan(l.tip, 'path-tip'));
+        li.appendChild(info);
+        if (i <= idx) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn ' + (i === idx ? 'btn-go' : 'btn-soft');
+          btn.textContent = i === idx ? '▶ Practicar' : 'Repasar';
+          btn.addEventListener('click', () => startSession(l.id));
+          li.appendChild(btn);
+        }
+        list.appendChild(li);
+      });
+      card.appendChild(list);
+      box.appendChild(card);
+    });
+  }
 
   /* ---------- Padres ---------- */
 
@@ -1038,12 +1479,15 @@
     $('set-name').value = data.name;
     fillLevelSelect($('set-level'));
     $('set-count').value = String(data.settings.perSession);
+    $('set-abacus').value = data.settings.abacus;
+    $('set-voice').checked = data.settings.voice;
+    $('set-warmup').checked = data.settings.warmup;
     $('set-sound').checked = data.settings.sound;
     $('set-rtl').checked = data.settings.rtl;
     $('set-labels').checked = data.settings.labels;
     const stats = levelStats(level.id);
     $('level-progress').textContent = `Nivel ${level.id}: ${stats.recentPassed} de 2 sesiones dominadas (entre las últimas 3). Tiempo objetivo: ${level.targetSec} s por ejercicio.`;
-    $('set-answer').value = data.settings.answerMode;
+    $('install-btn').hidden = !installPrompt;
 
     const atLevel = data.history.filter(h => h.levelId === level.id).slice(-2);
     const struggling = atLevel.length === 2 && atLevel.every(h => h.correct / h.total < 0.6);
@@ -1055,18 +1499,17 @@
     tbody.innerHTML = '';
     const rows = data.history.map((h, i) => ({ h, i })).reverse().slice(0, 60);
     if (!rows.length) {
-      const tr = tbody.insertRow();
-      const td = tr.insertCell();
+      const td = tbody.insertRow().insertCell();
       td.colSpan = 6;
       td.textContent = 'Todavía no hay sesiones.';
     }
     rows.forEach(({ h, i }) => {
       const tr = tbody.insertRow();
-      [shortDate(h.date), h.levelId, `${h.correct}/${h.total}${h.passed ? ' ✓' : ''}`, formatTime(h.seconds), h.source === 'papel' ? '📄 papel' : '💻 pantalla']
+      [shortDate(h.date), h.levelId, `${h.correct}/${h.total}${h.passed ? ' ✓' : ''}`, formatTime(h.seconds), h.source === 'papel' ? '📄 papel' : '📱 pantalla']
         .forEach(text => { tr.insertCell().textContent = text; });
       const del = document.createElement('button');
       del.type = 'button';
-      del.className = 'icon-btn small';
+      del.className = 'round-btn small';
       del.textContent = '✕';
       del.setAttribute('aria-label', 'Borrar sesión');
       del.addEventListener('click', () => {
@@ -1080,20 +1523,17 @@
   }
 
   $('gate-go').addEventListener('click', () => {
-    if (parseInt($('gate-answer').value, 10) === gate[0] * gate[1]) {
-      parentsUnlocked = true;
-      renderParents();
-    } else {
-      $('gate-answer').value = '';
-      renderParents();
-    }
+    if (parseInt($('gate-answer').value, 10) === gate[0] * gate[1]) parentsUnlocked = true;
+    renderParents();
   });
   $('gate-answer').addEventListener('keydown', e => { if (e.key === 'Enter') $('gate-go').click(); });
 
   $('set-name').addEventListener('change', e => { data.name = e.target.value.trim(); save(); });
   $('set-level').addEventListener('change', e => { setLevel(e.target.value); save(); renderParents(); });
-  $('set-answer').addEventListener('change', e => { data.settings.answerMode = e.target.value; save(); });
   $('set-count').addEventListener('change', e => { data.settings.perSession = parseInt(e.target.value, 10); save(); });
+  $('set-abacus').addEventListener('change', e => { data.settings.abacus = e.target.value; save(); });
+  $('set-voice').addEventListener('change', e => { data.settings.voice = e.target.checked; save(); });
+  $('set-warmup').addEventListener('change', e => { data.settings.warmup = e.target.checked; save(); });
   $('set-sound').addEventListener('change', e => { data.settings.sound = e.target.checked; save(); });
   $('set-rtl').addEventListener('change', e => { data.settings.rtl = e.target.checked; save(); });
   $('set-labels').addEventListener('change', e => { data.settings.labels = e.target.checked; save(); });
@@ -1117,6 +1557,7 @@
         if (!imported || !Array.isArray(imported.history)) throw new Error('formato');
         data = Object.assign(defaults(), imported);
         data.settings = Object.assign(defaults().settings, imported.settings);
+        data.calligraphy = Object.assign({}, imported.calligraphy);
         save();
         renderParents();
         window.alert('¡Progreso importado!');
@@ -1134,6 +1575,26 @@
     save();
     renderParents();
   });
+
+  /* ---------- App instalable ---------- */
+
+  let installPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    installPrompt = e;
+    $('install-btn').hidden = false;
+  });
+
+  $('install-btn').addEventListener('click', () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    installPrompt = null;
+    $('install-btn').hidden = true;
+  });
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* sin modo sin conexión */ });
+  }
 
   /* ---------- Arranque ---------- */
 

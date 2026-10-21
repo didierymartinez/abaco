@@ -28,9 +28,10 @@
     return node;
   }
 
+  // Cuenta redondeada, como las de un ábaco de madera.
   function beadPath() {
-    const c = 11, w = BEAD_W, h = BEAD_H - 2;
-    return `M0 ${h / 2 + 1} L${c} 1 L${w - c} 1 L${w} ${h / 2 + 1} L${w - c} ${h + 1} L${c} ${h + 1} Z`;
+    const w = BEAD_W, h = BEAD_H - 2, r = h / 2;
+    return `M${r} 1 H${w - r} A${r} ${r} 0 0 1 ${w - r} ${h + 1} H${r} A${r} ${r} 0 0 1 ${r} 1 Z`;
   }
 
   class Soroban {
@@ -74,13 +75,8 @@
         el('line', { x1: cx, y1: PAD - 4, x2: cx, y2: FRAME_H - PAD + 4, class: 'sb-stick' }, rodG);
 
         const heaven = el('path', { d: beadPath(), class: 'sb-bead sb-heaven' }, rodG);
-        heaven.addEventListener('click', () => this.tapHeaven(place));
         const earth = [];
-        for (let i = 0; i < 4; i++) {
-          const bead = el('path', { d: beadPath(), class: 'sb-bead sb-earth' }, rodG);
-          bead.addEventListener('click', () => this.tapEarth(place, i));
-          earth.push(bead);
-        }
+        for (let i = 0; i < 4; i++) earth.push(el('path', { d: beadPath(), class: 'sb-bead sb-earth' }, rodG));
 
         let digit = null;
         if (this.showDigits) {
@@ -110,23 +106,72 @@
       for (let place = 0; place < this.rods; place += 3) {
         el('circle', { cx: this.rodNodes[place].cx, cy: BEAM_Y + BEAM_H / 2, r: 2.6, class: 'sb-dot' }, g);
       }
+
+      // Zonas de toque: toda la parte de cielo y toda la de tierra de cada varilla,
+      // para no tener que acertar justo en la cuenta. También se puede deslizar.
+      if (this.interactive) {
+        for (let place = 0; place < this.rods; place++) {
+          const x = this.rodNodes[place].cx - ROD_W / 2;
+          const zones = [
+            el('rect', { x, y: 0, width: ROD_W, height: BEAM_Y, class: 'sb-hit', 'data-zone': 'heaven' }, g),
+            el('rect', { x, y: EARTH_Y, width: ROD_W, height: FRAME_H - EARTH_Y, class: 'sb-hit', 'data-zone': 'earth' }, g)
+          ];
+          zones.forEach(z => this.bindZone(z, place));
+        }
+        svg.style.touchAction = 'none';
+      }
       this.container.appendChild(svg);
     }
 
-    tapHeaven(place) {
-      if (!this.interactive) return;
-      this.state[place].upper = this.state[place].upper ? 0 : 1;
+    localY(e) {
+      const pt = this.svg.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      return pt.matrixTransform(this.svg.querySelector('g').getScreenCTM().inverse()).y;
+    }
+
+    bindZone(zone, place) {
+      let start = null;
+      zone.addEventListener('pointerdown', e => {
+        if (!this.interactive) return;
+        e.preventDefault();
+        zone.setPointerCapture(e.pointerId);
+        start = this.localY(e);
+      });
+      const end = e => {
+        if (start === null) return;
+        const dy = this.localY(e) - start;
+        const swipe = Math.abs(dy) > BEAD_H * 0.6 ? Math.sign(dy) : 0;
+        if (zone.dataset.zone === 'heaven') this.moveHeaven(place, swipe);
+        else this.moveEarth(place, start, swipe);
+        start = null;
+      };
+      zone.addEventListener('pointerup', end);
+      zone.addEventListener('pointercancel', () => { start = null; });
+    }
+
+    // Tocar alterna la cuenta del cielo; deslizar hacia abajo la pone y hacia arriba la quita.
+    moveHeaven(place, swipe) {
+      const rod = this.state[place];
+      rod.upper = swipe > 0 ? 1 : swipe < 0 ? 0 : 1 - rod.upper;
       this.changed();
     }
 
-    tapEarth(place, i) {
-      if (!this.interactive) return;
+    // En la tierra, el hueco bajo el dedo decide cuántas cuentas quedan pegadas a la barra:
+    // tocar una cuenta sube (o baja) hasta ella; deslizar hacia arriba solo sube y hacia abajo solo baja.
+    moveEarth(place, y, swipe) {
       const rod = this.state[place];
-      rod.lower = i < rod.lower ? i : i + 1;
+      const slot = Math.max(0, Math.min(4, Math.floor((y - EARTH_Y) / BEAD_H)));
+      if (swipe < 0) rod.lower = Math.max(rod.lower, slot === rod.lower ? Math.min(4, slot + 1) : slot);
+      else if (swipe > 0) rod.lower = Math.min(rod.lower, slot);
+      else rod.lower = slot;
       this.changed();
     }
 
     changed() {
+      if (navigator.vibrate) {
+        try { navigator.vibrate(8); } catch (e) { /* sin vibración */ }
+      }
       this.render();
       if (this.onChange) this.onChange(this.getValue());
     }
@@ -166,6 +211,7 @@
     setInteractive(on) {
       this.interactive = on;
       this.svg.classList.toggle('is-interactive', on);
+      this.svg.querySelectorAll('.sb-hit').forEach(z => { z.style.pointerEvents = on ? '' : 'none'; });
     }
 
     // Resalta la varilla con la que se está trabajando (o ninguna con null).

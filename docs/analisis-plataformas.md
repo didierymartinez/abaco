@@ -81,21 +81,35 @@ Una observación: en su nivel «Sumas simples (sin llevadas)» aparece `1 + 4`, 
 
 No adoptamos el temporizador con cuenta regresiva por ronda: a los 7 años preferimos medir el tiempo sin presionar.
 
-## 5. Lo que implementa Mi Ábaco (v1)
+## 5. Rediseño v2: ¿app móvil? y una identidad propia
 
-- **Inicio:** racha de días seguidos 🔥, los últimos 7 días, el nivel actual con un consejo, por qué toca y un botón para empezar.
-- **Mi camino:** mapa de módulos y niveles con progreso, estadísticas y repaso de niveles superados.
-- **Sesión diaria** (10 ejercicios por defecto, configurable), con una pantalla «Antes de empezar»:
-  - *Leer el ábaco*: escribir el número que muestra.
-  - *Poner en el ábaco*: mover las cuentas hasta formar el número.
-  - *Cálculo*: en horizontal (`3 + 4 =`) o en columna al estilo Kumon. Se responde moviendo las cuentas (por defecto) o con un teclado numérico grande.
-  - *Flash anzan*: los números aparecen uno a uno.
-  - Dos intentos por ejercicio, con una pista del nivel tras el primer fallo. Después se muestra la respuesta y el botón **«Ver cómo se hace»** anima la solución en el ábaco paso a paso.
-  - Un ábaco de ayuda opcional en cada cálculo.
-- **Resultado:** estrellas, aciertos, tiempo, racha y un mensaje sobre el avance de nivel.
-- **Hojas imprimibles:** una por día, con encabezado Kumon (*Nombre / Fecha / Tiempo*), 10 ejercicios y una hoja de respuestas. **La hoja de un día tiene los mismos ejercicios que la sesión en pantalla de ese día.** La hoja hecha en papel se puede registrar para que cuente en la racha.
-- **Aprende:** un ábaco libre, las tablas de amigos del 5 y del 10, y una demostración paso a paso de cualquier suma o resta.
-- **Padres:** se entra resolviendo una multiplicación. Ahí se elige el nivel y la cantidad de ejercicios, se activan o desactivan el sonido, las etiquetas U/D/C y la escritura de derecha a izquierda, y se consultan el historial y las copias de seguridad (exportar e importar).
+**Qué falló en la v1 (medido en celular y tableta):**
+- En el celular había que desplazarse para responder: el botón ✓ quedaba 250 px por debajo de la pantalla.
+- Las cuentas del ábaco medían 52×22 px en las sumas de 3 cifras, por debajo del mínimo de 44 px para tocar. Además había que acertar justo en la cuenta.
+- La tableta estaba desaprovechada, había mucho texto sin voz y la apariencia era genérica: tarjetas blancas, naranja y botones redondeados.
+
+**Decisión sobre la app móvil:** el problema era el diseño táctil, no la tecnología. Por eso se rediseñó la experiencia y se convirtió en una **app instalable (PWA)**: ícono en la pantalla de inicio, pantalla completa y uso sin internet, sin tiendas ni costos. Si más adelante se quiere un recordatorio diario o publicarla en tiendas, el mismo código se puede empaquetar con Capacitor.
+
+**Decisiones con la familia:**
+- **Estilo C, «juguete de madera»:** ábaco con cuentas redondas tipo Montessori y colores miel, tomate y hoja. Lo guía Mapi, una mascota que habla.
+- **Dispositivos:** celular y computador.
+- **Las cuentas se hacen en un ábaco real y con lápiz.** La pantalla guía, cronometra y corrige.
+- **Caligrafía de los números** como objetivo explícito, al estilo de las hojas Kumon 4A de trazado.
+
+## 6. Lo que implementa Mi Ábaco
+
+- **Inicio:** Mapi saluda; la racha se muestra como cuentas en una varilla con los 7 días; hay un botón grande para jugar, la hoja en papel y cuatro accesos.
+- **Sesión diaria** (10 ejercicios por defecto), en una sola pantalla sin desplazarse:
+  1. Mapi presenta el nivel con voz, con 3 recordatorios del módulo.
+  2. **Calentamiento de caligrafía:** el número del día (el que tiene menos estrellas) se escribe una vez con camino y otra sin ayuda.
+  3. **Ejercicios con el ábaco real:** ella calcula en su ábaco y escribe el resultado en un teclado grande. En «Pon el número» compara su ábaco con la imagen y responde «¿Se ve así?».
+  4. Dos intentos, con una pista del nivel tras el primer fallo. Después, **«Ver cómo se hace»** anima la solución en el ábaco en pantalla y Mapi la explica con voz.
+  5. Si no hay ábaco real, los padres pueden cambiar a «ábaco en pantalla»: las cuentas se tocan o se deslizan, con zonas de toque grandes.
+- **Hoja en papel:** imprimir la hoja del día, cronómetro grande «▶ / ¡Terminé!» y corrección tocando las respuestas equivocadas. Cuenta para la racha y para el avance de nivel.
+- **Escribir números:** los 10 números con orden de trazo, punto de inicio y flecha. Tres rondas (con camino, con puntos, sin ayuda); la puntuación revisa la forma, el orden y la dirección de los trazos.
+- **Imprimir:** hojas del nivel (las del día coinciden con la sesión) con una fila de caligrafía arriba, hoja de respuestas, y hojas de caligrafía de todos los números o de uno solo, con el modelo, puntos que se van desvaneciendo y casillas para escribir solo.
+- **Mi camino, Aprende y Padres**, como en la versión anterior, más los ajustes nuevos: tipo de ábaco, voz y calentamiento.
+- **App instalable:** manifiesto, íconos y *service worker* para usarla sin conexión.
 
 ### Niveles
 
@@ -112,15 +126,16 @@ No adoptamos el temporizador con cuenta regresiva por ronda: a los 7 años prefe
 
 Los generadores revisan qué movimiento pide cada varilla (directo, amigo del 5 o amigo del 10). Así, por ejemplo, un nivel de «sumas directas» nunca incluye un ejercicio que necesite amigos.
 
-## 6. Ideas para siguientes versiones
+## 7. Ideas para siguientes versiones
 
 - **Evaluación inicial** al estilo Smartick o la «recomendación» de Supercerebros, para elegir el nivel de inicio automáticamente.
 - **Adaptación dentro de la sesión**: si falla dos seguidos, intercalar un ejercicio del nivel anterior.
-- **App instalable sin conexión** (PWA) para usarla en una tableta.
+- **Recordatorio diario** («¡Hora del ábaco!»), empaquetando la app con Capacitor.
+- **Dictado de números:** Mapi dice un número y ella lo escribe con el dedo, para unir caligrafía y lectura de números.
 - **Varios perfiles**, por ejemplo para hermanos.
 - **Sincronizar el progreso** entre dispositivos (hoy se guarda en el navegador y se pasa con exportar e importar).
 - **Multiplicación y división** en el soroban.
-- **Pegatinas o mascota** que crecen con la racha.
+- **Mapi que crece** o se viste con la racha.
 
 ## Fuentes
 
