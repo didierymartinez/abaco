@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Mi Ábaco">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap">
-  <link rel="stylesheet" href="css/app.css?v=6">
+  <link rel="stylesheet" href="css/app.css?v=7">
 </head>
 <body>
   <!-- Mapi, la mascota: un mapache dibujado en SVG que se reutiliza en toda la app -->
@@ -351,6 +351,27 @@
             </label>
           </div>
           <label class="check"><input type="checkbox" id="set-voice"> Mapi habla (voz)</label>
+          <div class="voice-box">
+            <div class="form-grid">
+              <label>Voz de Mapi <select id="set-voice-name"></select></label>
+              <label>Velocidad
+                <select id="set-voice-rate">
+                  <option value="0.85">Lenta</option>
+                  <option value="0.95">Normal</option>
+                  <option value="1.05">Rápida</option>
+                </select>
+              </label>
+            </div>
+            <button class="btn btn-soft" id="voice-test" type="button">▶ Probar la voz</button>
+            <p class="muted" id="voice-none" hidden>Este dispositivo no tiene voces en español instaladas.</p>
+            <details class="voice-help">
+              <summary>¿Suena robótica? Instala una voz mejor</summary>
+              <p><b>Android:</b> Ajustes → Accesibilidad (o Sistema → Idiomas) → <i>Salida de texto a voz</i> → motor <b>Servicios de voz de Google</b> → ⚙️ → <i>Instalar datos de voz</i> → Español (Estados Unidos o México) → elige una voz y descárgala.</p>
+              <p><b>iPhone / iPad:</b> Ajustes → Accesibilidad → <i>Contenido leído</i> → <i>Voces</i> → Español (México) → descarga <b>Paulina (Mejorada)</b> o <b>Mónica (Mejorada)</b>.</p>
+              <p><b>Computador:</b> Chrome trae «Google español de Estados Unidos» y Edge trae voces «Natural» (en línea), que suenan muy bien.</p>
+              <p>Después vuelve aquí, elige la voz en la lista y toca «Probar la voz».</p>
+            </details>
+          </div>
           <label class="check"><input type="checkbox" id="set-sound"> Sonidos</label>
           <label class="check"><input type="checkbox" id="set-rtl"> Con teclado, en sumas en columna, escribir la respuesta de derecha a izquierda (unidades primero)</label>
           <label class="check"><input type="checkbox" id="set-labels"> Mostrar U, D, C debajo del ábaco</label>
@@ -401,9 +422,9 @@
     <button type="button" data-go="parents" data-tab="parents"><span aria-hidden="true">👨‍👩‍👧</span>Padres</button>
   </nav>
 
-  <script src="js/curriculum.js?v=6"></script>
-  <script src="js/soroban.js?v=6"></script>
-  <script src="js/caligrafia.js?v=6"></script>
-  <script src="js/app.js?v=6"></script>
+  <script src="js/curriculum.js?v=7"></script>
+  <script src="js/soroban.js?v=7"></script>
+  <script src="js/caligrafia.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 </body>
 </html>

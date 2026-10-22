@@ -391,6 +391,10 @@ body.in-session .tabbar { display: none; }
 .examples { margin-top: 8px; }
 
 /* Padres */
+.voice-box { background: #f4f7fc; border-radius: 18px; padding: 12px 14px; margin: 6px 0 10px; }
+.voice-help { margin-top: 10px; }
+.voice-help summary { cursor: pointer; color: var(--primary-dark); font-weight: 800; }
+.voice-help p { font-weight: 600; margin: 8px 0 0; }
 .suggestion { background: var(--accent-soft); border-radius: 14px; padding: 10px 12px; }
 .table-wrap { overflow-x: auto; }
 .history { width: 100%; border-collapse: collapse; font-size: .95rem; }

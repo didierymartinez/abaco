@@ -174,34 +174,72 @@
   const soundTry = () => playTones([300]);
   const soundWin = () => playTones([523, 659, 784, 1047]);
 
-  // Voz de Mapi con la síntesis del navegador (funciona sin internet en la mayoría de equipos).
+  // Voz de Mapi con la síntesis del dispositivo. La calidad depende de las voces
+  // instaladas: se elige la más natural en español (o la que elijan los padres).
   let voice = null;
+
+  function spanishVoices() {
+    try { return window.speechSynthesis.getVoices().filter(v => /^es/i.test(v.lang)); } catch (e) { return []; }
+  }
+
+  // Puntaje para preferir voces neuronales/mejoradas y de Latinoamérica.
+  function voiceScore(v) {
+    let score = 0;
+    if (/natural|neural|online|premium|enhanced|mejorad|siri|wavenet/i.test(v.name)) score += 40;
+    if (/google/i.test(v.name)) score += 25;
+    if (!v.localService) score += 10;
+    if (/(CO|MX|US|419)/i.test(v.lang)) score += 8;
+    if (/compact|espeak|robot/i.test(v.name)) score -= 50;
+    return score;
+  }
+
   function pickVoice() {
-    try {
-      const voices = window.speechSynthesis.getVoices().filter(v => /^es/i.test(v.lang));
-      voice = voices.find(v => /(CO|MX|US|419)/i.test(v.lang)) || voices[0] || null;
-    } catch (e) { voice = null; }
+    const voices = spanishVoices();
+    voice = voices.find(v => v.name === data.settings.voiceName)
+      || voices.slice().sort((a, b) => voiceScore(b) - voiceScore(a))[0]
+      || null;
   }
   if ('speechSynthesis' in window) {
     pickVoice();
-    window.speechSynthesis.onvoiceschanged = pickVoice;
+    window.speechSynthesis.onvoiceschanged = () => { pickVoice(); if (currentView === 'parents') fillVoiceSelect(); };
+  }
+
+  // Convierte el texto de pantalla en algo natural para decir en voz alta.
+  function speakable(text) {
+    return text
+      .replace(/\p{Extended_Pictographic}/gu, '')
+      .replace(/[★☆⭐]/g, '')
+      .replace(/\(([+−-])(\d+)\)/g, (m, sign, n) => (sign === '+' ? 'más ' : 'menos ') + n)
+      .replace(/\s?−\s?/g, ' menos ')
+      .replace(/\s?\+\s?/g, ' más ')
+      .replace(/\s?×\s?/g, ' por ')
+      .replace(/\s?=\s?\?/g, ', ¿cuánto es?')
+      .replace(/(\d+)\s?→\s?\?/g, 'el número después del $1')
+      .replace(/\?\s?←\s?(\d+)/g, 'el número antes del $1')
+      .replace(/^\s*…\s*/, '')
+      .replace(/\s*…\s*$/, '.')
+      .replace(/…/g, ', ')
+      .replace(/\s?·\s?/g, ', ')
+      .replace(/[«»]/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
   }
 
   function say(text) {
     if (!data.settings.voice || !('speechSynthesis' in window) || !text) return;
     try {
       window.speechSynthesis.cancel();
-      const clean = text
-        .replace(/\p{Extended_Pictographic}/gu, '')
-        .replace(/\s−\s?/g, ' menos ')
-        .replace(/\s\+\s?/g, ' más ')
-        .replace(/×/g, ' por ');
-      const u = new SpeechSynthesisUtterance(clean);
-      u.lang = voice ? voice.lang : 'es-ES';
-      if (voice) u.voice = voice;
-      u.rate = 0.95;
-      u.pitch = 1.12;
-      window.speechSynthesis.speak(u);
+      if (!voice) pickVoice();
+      // Frase por frase: suena más natural y evita que algunos navegadores corten textos largos.
+      const parts = speakable(text).split(/(?<=[.!?])\s+/).filter(Boolean);
+      parts.forEach(part => {
+        const u = new SpeechSynthesisUtterance(part);
+        u.lang = voice ? voice.lang : 'es-MX';
+        if (voice) u.voice = voice;
+        u.rate = data.settings.voiceRate || 0.95;
+        u.pitch = 1;
+        window.speechSynthesis.speak(u);
+      });
     } catch (e) { /* sin voz */ }
   }
 
@@ -1639,6 +1677,8 @@
     $('set-count').value = String(data.settings.perSession);
     $('set-abacus').value = data.settings.abacus;
     $('set-voice').checked = data.settings.voice;
+    fillVoiceSelect();
+    $('set-voice-rate').value = String(data.settings.voiceRate || 0.95);
     $('set-sound').checked = data.settings.sound;
     $('set-rtl').checked = data.settings.rtl;
     $('set-labels').checked = data.settings.labels;
@@ -1697,6 +1737,34 @@
   $('set-count').addEventListener('change', e => { data.settings.perSession = parseInt(e.target.value, 10); save(); });
   $('set-abacus').addEventListener('change', e => { data.settings.abacus = e.target.value; save(); });
   $('set-voice').addEventListener('change', e => { data.settings.voice = e.target.checked; save(); });
+
+  function fillVoiceSelect() {
+    const select = $('set-voice-name');
+    const voices = spanishVoices().sort((a, b) => voiceScore(b) - voiceScore(a));
+    select.innerHTML = '';
+    const auto = document.createElement('option');
+    auto.value = '';
+    auto.textContent = voices.length ? `Automática (${voices[0].name})` : 'Automática';
+    select.appendChild(auto);
+    voices.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = `${v.name} · ${v.lang}${v.localService ? '' : ' · en línea'}`;
+      select.appendChild(o);
+    });
+    select.value = voices.some(v => v.name === data.settings.voiceName) ? data.settings.voiceName : '';
+    $('voice-none').hidden = voices.length > 0;
+  }
+
+  const VOICE_SAMPLE = '¡Hola! Soy Mapi. Vamos a contar juntos: uno, dos, tres, cuatro. ¡Muy bien!';
+  $('set-voice-name').addEventListener('change', e => { data.settings.voiceName = e.target.value; save(); pickVoice(); say(VOICE_SAMPLE); });
+  $('set-voice-rate').addEventListener('change', e => { data.settings.voiceRate = parseFloat(e.target.value); save(); say(VOICE_SAMPLE); });
+  $('voice-test').addEventListener('click', () => {
+    const was = data.settings.voice;
+    data.settings.voice = true;
+    say(VOICE_SAMPLE);
+    data.settings.voice = was;
+  });
   $('set-sound').addEventListener('change', e => { data.settings.sound = e.target.checked; save(); });
   $('set-rtl').addEventListener('change', e => { data.settings.rtl = e.target.checked; save(); });
   $('set-labels').addEventListener('change', e => { data.settings.labels = e.target.checked; save(); });
