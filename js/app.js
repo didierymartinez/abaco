@@ -1756,7 +1756,7 @@
   });
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* sin modo sin conexión */ });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => { /* sin modo sin conexión */ });
   }
 
   /* ---------- Arranque ---------- */

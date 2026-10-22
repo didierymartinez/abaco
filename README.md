@@ -46,6 +46,14 @@ Si se publica en IIS, hay que agregar el tipo MIME `.webmanifest` → `applicati
 
 El progreso se guarda en el dispositivo. Para pasarlo a otro, usa *Padres → Exportar / Importar*.
 
+### Publicar una versión nueva
+
+Al cambiar archivos de la app, sube el número de versión en **dos lugares** para que los celulares no mezclen archivos viejos y nuevos:
+- `?v=` en los enlaces de `css/app.css` y `js/*.js` de `index.html`;
+- `ASSETS` y `VERSION` en `sw.js`.
+
+Con internet, la app siempre pide la versión actual. Al detectar una versión nueva se recarga sola, y sin internet usa la copia guardada.
+
 ## Estructura
 
 | Archivo | Qué contiene |
