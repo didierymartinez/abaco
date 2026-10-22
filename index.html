@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#cfe7e0">
-  <meta name="description" content="Práctica diaria de ábaco soroban y caligrafía de números para niños.">
+  <meta name="theme-color" content="#eaf5ff">
+  <meta name="description" content="Aprende el ábaco soroban paso a paso: mira, hazlo con Mapi y practica.">
   <title>Mi Ábaco</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
@@ -13,95 +13,161 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Mi Ábaco">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+  <!-- Mapi, la mascota: un mapache dibujado en SVG que se reutiliza en toda la app -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="mapi" viewBox="0 0 120 120">
+      <circle cx="28" cy="30" r="15" fill="#8d97ad"/>
+      <circle cx="92" cy="30" r="15" fill="#8d97ad"/>
+      <circle cx="28" cy="31" r="8" fill="#ffb7c5"/>
+      <circle cx="92" cy="31" r="8" fill="#ffb7c5"/>
+      <ellipse cx="60" cy="66" rx="46" ry="42" fill="#aab3c7"/>
+      <path d="M60 26 c-6 0 -9 8 -9 14 c3 -2 6 -3 9 -3 s6 1 9 3 c0 -6 -3 -14 -9 -14z" fill="#8d97ad"/>
+      <ellipse cx="60" cy="80" rx="31" ry="23" fill="#f6f8fd"/>
+      <ellipse cx="41" cy="62" rx="18" ry="12" fill="#2b3348"/>
+      <ellipse cx="79" cy="62" rx="18" ry="12" fill="#2b3348"/>
+      <g class="mapi-eyes">
+        <circle cx="42" cy="61" r="7" fill="#fff"/>
+        <circle cx="78" cy="61" r="7" fill="#fff"/>
+        <circle cx="43" cy="62" r="4.2" fill="#1f2a44"/>
+        <circle cx="79" cy="62" r="4.2" fill="#1f2a44"/>
+        <circle cx="44.5" cy="60.3" r="1.6" fill="#fff"/>
+        <circle cx="80.5" cy="60.3" r="1.6" fill="#fff"/>
+      </g>
+      <ellipse cx="60" cy="76" rx="7" ry="5" fill="#1f2a44"/>
+      <path d="M52 84 q8 8 16 0" fill="none" stroke="#1f2a44" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="33" cy="80" r="6" fill="#ff9fb3" opacity=".55"/>
+      <circle cx="87" cy="80" r="6" fill="#ff9fb3" opacity=".55"/>
+    </symbol>
+  </svg>
+
   <div id="app">
 
-    <!-- Inicio -->
+    <!-- Inicio: el camino de la niña -->
     <section class="view" id="view-home">
-      <header class="home-top">
+      <header class="topbar">
         <button class="avatar" id="home-avatar" type="button" aria-label="Cambiar perfil">🐼</button>
-        <div class="home-hello">
+        <div class="topbar-text">
           <h1 id="home-title">¡Hola!</h1>
           <p id="home-date"></p>
         </div>
-        <button class="round-btn small" data-go="parents" type="button" aria-label="Padres">🔒</button>
+        <span class="chip-stat" title="Días seguidos"><span aria-hidden="true">🔥</span><b id="streak-count">0</b></span>
+        <span class="chip-stat" title="Estrellas"><span aria-hidden="true">⭐</span><b id="home-stars">0</b></span>
       </header>
 
-      <div class="guide">
-        <div class="mascot" aria-hidden="true">🦝</div>
-        <p class="bubble" id="home-bubble"></p>
-        <button class="round-btn small speak" id="home-speak" type="button" aria-label="Escuchar">🔊</button>
-      </div>
-
-      <div class="panel onboarding" id="onboarding" hidden>
+      <div class="card onboarding" id="onboarding" hidden>
         <h2>¿Cómo te llamas?</h2>
         <input id="onboarding-name" class="text-input" maxlength="20" placeholder="Tu nombre" autocomplete="off">
         <p class="muted">Elige tu compañero:</p>
         <div class="avatar-picker" id="onboarding-avatars"></div>
-        <button class="btn btn-go" id="onboarding-save" type="button">¡Listo!</button>
+        <button class="btn btn-primary" id="onboarding-save" type="button">¡Listo!</button>
       </div>
 
-      <div class="home-grid">
-        <div class="panel play-panel">
-          <p class="eyebrow">Hoy</p>
-          <h2 id="today-level"></h2>
-          <p class="muted" id="today-status"></p>
-          <button class="play-btn" id="start-session" type="button" aria-label="Empezar la sesión de hoy">▶</button>
-          <p class="why" id="today-why"></p>
-          <button class="btn btn-wood" id="paper-start" type="button">✏️ Hacer la hoja en papel</button>
+      <div class="card hero">
+        <div class="guide">
+          <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#mapi"/></svg>
+          <p class="bubble" id="home-bubble"></p>
+          <button class="icon-btn small" id="home-speak" type="button" aria-label="Escuchar a Mapi">🔊</button>
         </div>
-
-        <div class="panel streak-panel">
-          <div class="streak-head">
-            <span class="streak-number" id="streak-count">0</span>
-            <span><b id="streak-unit">días seguidos</b><br><span class="muted" id="streak-best"></span></span>
-          </div>
-          <div class="streak-rod" aria-label="Últimos 7 días">
-            <ol id="week-strip"></ol>
-          </div>
-        </div>
+        <p class="eyebrow" id="hero-module"></p>
+        <h2 class="hero-title" id="today-level"></h2>
+        <ol class="steps" id="today-steps" aria-label="Pasos del nivel"></ol>
+        <button class="btn btn-primary btn-block btn-xl" id="start-session" type="button">Continuar</button>
+        <button class="btn btn-ghost btn-block" id="paper-start" type="button">📄 Hacer la práctica en papel</button>
+        <p class="why" id="today-why"></p>
       </div>
 
-      <nav class="tiles">
-        <button class="tile" id="tile-caligrafia" type="button"><span>✏️</span>Hojas de caligrafía</button>
-        <button class="tile" data-go="route" type="button"><span>🗺️</span>Mi camino</button>
-        <button class="tile" data-go="learn" type="button"><span>🧮</span>Aprende</button>
-        <button class="tile" data-go="print" type="button"><span>🖨️</span>Imprimir</button>
-      </nav>
+      <div class="card week-card">
+        <div class="week-head">
+          <h3>Esta semana</h3>
+          <span class="muted" id="streak-best"></span>
+        </div>
+        <ol class="week" id="week-strip" aria-label="Últimos 7 días"></ol>
+      </div>
+
+      <div class="map-head">
+        <h2>Mi camino</h2>
+        <span class="muted" id="route-summary"></span>
+      </div>
+      <div class="bar" aria-hidden="true"><span id="route-bar"></span></div>
+      <div id="route-modules" class="map"></div>
+    </section>
+
+    <!-- Logros -->
+    <section class="view" id="view-awards" hidden>
+      <div class="view-head"><h1>Mis logros</h1></div>
+      <div class="stats" id="awards-stats"></div>
+      <div class="card">
+        <h2>Álbum de medallas</h2>
+        <p class="muted" id="awards-count"></p>
+        <div class="badges" id="awards-grid"></div>
+      </div>
+    </section>
+
+    <!-- Ábaco libre -->
+    <section class="view" id="view-abacus" hidden>
+      <div class="view-head"><h1>Ábaco libre</h1></div>
+      <div class="card">
+        <p>Toca o desliza las cuentas. <b>Las de abajo valen 1</b> y <b>la de arriba vale 5</b>. Solo cuentan las que tocan la barra.</p>
+        <div class="free-number" id="free-number">0</div>
+        <div class="learn-abacus" id="free-abacus"></div>
+        <div class="row center"><button class="btn btn-soft" id="free-clear" type="button">Limpiar</button></div>
+      </div>
+
+      <div class="card">
+        <h2>¿Cómo se hace?</h2>
+        <p class="muted">Escribe una suma o una resta y Mapi te la muestra paso a paso.</p>
+        <div class="row">
+          <input type="number" class="text-input small" id="demo-a" value="4" min="0" max="999" aria-label="Primer número">
+          <select id="demo-op" class="text-input small" aria-label="Operación"><option value="+">+</option><option value="-">−</option></select>
+          <input type="number" class="text-input small" id="demo-b" value="3" min="0" max="999" aria-label="Segundo número">
+          <button class="btn btn-primary" id="demo-start" type="button">Ver</button>
+        </div>
+        <div class="row examples" id="demo-examples"></div>
+        <div class="learn-abacus" id="demo-abacus"></div>
+        <p class="step-text" id="demo-text">Elige un ejemplo o escribe tu propia operación.</p>
+        <div class="row center">
+          <button class="btn btn-soft" id="demo-prev" type="button">◀ Atrás</button>
+          <button class="btn btn-soft" id="demo-next" type="button">Siguiente ▶</button>
+        </div>
+      </div>
     </section>
 
     <!-- Sesión -->
     <section class="view session" id="view-session" hidden>
       <div class="session-bar">
-        <button class="round-btn" id="session-exit" type="button" aria-label="Salir">✕</button>
-        <ol class="bead-progress" id="session-progress" aria-label="Progreso"></ol>
+        <button class="icon-btn" id="session-exit" type="button" aria-label="Salir">✕</button>
+        <ol class="progress" id="session-progress" aria-label="Progreso"></ol>
         <span class="timer" id="session-timer">0:00</span>
-        <button class="round-btn" id="session-voice" type="button" aria-label="Voz">🔊</button>
-        <button class="round-btn hide-phone" id="session-fullscreen" type="button" aria-label="Pantalla completa">⛶</button>
+        <button class="icon-btn" id="session-help" type="button" aria-label="Guía: ¿cómo se hace?">?</button>
+        <button class="icon-btn" id="session-voice" type="button" aria-label="Voz">🔊</button>
+        <button class="icon-btn hide-phone" id="session-fullscreen" type="button" aria-label="Pantalla completa">⛶</button>
       </div>
 
       <div class="session-main">
         <div class="stage">
+          <ol class="phases" id="session-phases" aria-label="Pasos de la lección">
+            <li data-phase="mira"><span>1</span> Mira</li>
+            <li data-phase="juntos"><span>2</span> Juntos</li>
+            <li data-phase="tu"><span>3</span> Tú</li>
+          </ol>
+
           <div class="guide">
-            <div class="mascot" id="mascot" aria-hidden="true">🦝</div>
+            <svg class="mascot" id="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#mapi"/></svg>
             <p class="bubble" id="bubble" role="status" aria-live="polite"></p>
           </div>
 
-          <ol class="phases" id="session-phases" aria-label="Pasos de la lección">
-            <li data-phase="mira">👀 Mira</li>
-            <li data-phase="juntos">🤝 Juntos</li>
-            <li data-phase="tu">⭐ Tú</li>
-          </ol>
-
           <div class="stage-body" id="briefing">
+            <p class="eyebrow" id="briefing-module"></p>
             <h2 id="briefing-level"></h2>
+            <ol class="steps big" id="briefing-steps"></ol>
             <ul class="concepts" id="briefing-concepts"></ul>
             <p class="why" id="briefing-plan"></p>
             <div class="row center">
-              <button class="btn btn-go btn-xl" id="briefing-go" type="button">¡Vamos!</button>
+              <button class="btn btn-primary btn-xl" id="briefing-go" type="button">¡Vamos!</button>
               <button class="btn btn-soft" id="briefing-lesson" type="button" hidden>👀 Ver la lección otra vez</button>
             </div>
           </div>
@@ -112,7 +178,7 @@
             <p class="lesson-count" id="lesson-count"></p>
             <div class="row center">
               <button class="btn btn-soft" id="lesson-prev" type="button">◀ Atrás</button>
-              <button class="btn btn-go btn-xl" id="lesson-next" type="button">Siguiente ▶</button>
+              <button class="btn btn-primary btn-xl" id="lesson-next" type="button">Siguiente ▶</button>
             </div>
           </div>
 
@@ -135,7 +201,7 @@
           <div class="abacus-sheet" id="abacus-sheet" hidden>
             <div class="sheet-bar">
               <span>🧮 Ábaco en pantalla</span>
-              <button class="round-btn small" id="abacus-sheet-close" type="button" aria-label="Cerrar">✕</button>
+              <button class="icon-btn small" id="abacus-sheet-close" type="button" aria-label="Cerrar">✕</button>
             </div>
             <div class="helper-abacus" id="helper-abacus"></div>
             <p class="step-text" id="helper-step" hidden></p>
@@ -147,83 +213,70 @@
 
     <!-- Resultado -->
     <section class="view" id="view-result" hidden>
-      <div class="panel result-panel">
-        <div class="mascot big" aria-hidden="true">🦝</div>
+      <div class="card result-card">
+        <svg class="mascot big" viewBox="0 0 120 120" aria-hidden="true"><use href="#mapi"/></svg>
         <div class="stars" id="result-stars"></div>
         <h1 id="result-title">¡Terminaste!</h1>
         <div class="result-stats">
           <div><strong id="result-score"></strong><span>aciertos</span></div>
           <div><strong id="result-time"></strong><span>tiempo</span></div>
-          <div><strong id="result-streak"></strong><span>días seguidos</span></div>
+          <div><strong id="result-streak"></strong><span>🔥 días</span></div>
         </div>
         <p class="level-message" id="result-level"></p>
+        <div class="new-badges" id="result-badges"></div>
         <div class="row center">
-          <button class="btn btn-go" data-go="home" type="button">Inicio</button>
+          <button class="btn btn-primary btn-xl" data-go="home" type="button">Ver mi camino</button>
           <button class="btn btn-soft" id="result-more" type="button">Otra vez</button>
         </div>
       </div>
       <div class="confetti" id="confetti" aria-hidden="true"></div>
     </section>
 
-    <!-- Hoja en papel -->
+    <!-- Práctica en papel -->
     <section class="view" id="view-paper" hidden>
       <div class="view-head">
-        <button class="round-btn" data-go="home" type="button" aria-label="Volver">←</button>
-        <h1>Hoja en papel</h1>
+        <button class="icon-btn" data-go="home" type="button" aria-label="Volver">←</button>
+        <h1>Práctica en papel</h1>
       </div>
-      <div class="guide">
-        <div class="mascot" aria-hidden="true">🦝</div>
-        <p class="bubble" id="paper-bubble"></p>
-      </div>
-
-      <div class="panel" id="paper-step-1">
-        <h2>1. La hoja de hoy</h2>
-        <p class="muted" id="paper-level"></p>
-        <div class="row">
-          <button class="btn btn-wood" id="paper-print" type="button">🖨️ Imprimir la hoja de hoy</button>
-          <button class="btn btn-go" id="paper-ready" type="button">Ya la tengo ▶</button>
+      <div class="card">
+        <div class="guide">
+          <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#mapi"/></svg>
+          <p class="bubble" id="paper-bubble"></p>
         </div>
       </div>
 
-      <div class="panel center-text" id="paper-step-2" hidden>
-        <h2>2. ¡A trabajar con el ábaco y el lápiz!</h2>
-        <div class="big-timer" id="paper-timer">0:00</div>
-        <button class="play-btn" id="paper-go" type="button" aria-label="Empezar">▶</button>
-        <button class="btn btn-go btn-xl" id="paper-stop" type="button" hidden>¡Terminé!</button>
+      <div class="card" id="paper-step-1">
+        <h2>1. La hoja de hoy</h2>
+        <p class="muted" id="paper-level"></p>
+        <div class="row">
+          <button class="btn btn-soft" id="paper-print" type="button">🖨️ Imprimir la hoja de hoy</button>
+          <button class="btn btn-primary" id="paper-ready" type="button">Ya la tengo ▶</button>
+        </div>
       </div>
 
-      <div class="panel" id="paper-step-3" hidden>
+      <div class="card center-text" id="paper-step-2" hidden>
+        <h2>2. ¡A trabajar con el ábaco y el lápiz!</h2>
+        <div class="big-timer" id="paper-timer">0:00</div>
+        <button class="btn btn-primary btn-xl" id="paper-go" type="button">▶ Empezar</button>
+        <button class="btn btn-primary btn-xl" id="paper-stop" type="button" hidden>¡Terminé!</button>
+      </div>
+
+      <div class="card" id="paper-step-3" hidden>
         <h2>3. A corregir</h2>
         <p class="muted">Compara cada respuesta de la hoja. Toca las que estén mal.</p>
         <ol class="paper-list" id="paper-list"></ol>
         <p class="paper-score" id="paper-score"></p>
-        <button class="btn btn-go" id="paper-save" type="button">Guardar</button>
+        <button class="btn btn-primary" id="paper-save" type="button">Guardar</button>
       </div>
     </section>
 
-    <!-- Mi camino -->
-    <section class="view" id="view-route" hidden>
-      <div class="view-head">
-        <button class="round-btn" data-go="home" type="button" aria-label="Volver">←</button>
-        <h1>Mi camino</h1>
-      </div>
-      <div class="panel">
-        <p class="eyebrow">Ruta del soroban</p>
-        <h2 id="route-summary"></h2>
-        <div class="bar" aria-hidden="true"><span id="route-bar"></span></div>
-        <div class="stats" id="route-stats"></div>
-        <p class="why" id="route-rule"></p>
-      </div>
-      <div id="route-modules"></div>
-    </section>
-
-    <!-- Imprimir -->
+    <!-- Imprimir (desde Padres) -->
     <section class="view" id="view-print" hidden>
       <div class="view-head">
-        <button class="round-btn" data-go="home" type="button" aria-label="Volver">←</button>
-        <h1>Imprimir</h1>
+        <button class="icon-btn" data-go="parents" type="button" aria-label="Volver">←</button>
+        <h1>Imprimir hojas</h1>
       </div>
-      <div class="panel no-print">
+      <div class="card no-print">
         <div class="form-grid">
           <label>Tipo de hoja
             <select id="print-kind">
@@ -244,86 +297,46 @@
         </div>
         <label class="check" data-kind="nivel"><input type="checkbox" id="print-answers" checked> Incluir hoja de respuestas</label>
         <label class="check" data-kind="nivel"><input type="checkbox" id="print-warmup" checked> Empezar cada hoja con una fila de caligrafía</label>
-        <p class="muted" data-kind="nivel">La hoja de cada día tiene los mismos ejercicios que la sesión en pantalla de ese día.</p>
+        <p class="muted" data-kind="nivel">Imprime solo niveles cuya lección ya vio en la app. La hoja de cada día tiene los mismos ejercicios que la sesión en pantalla de ese día.</p>
         <div class="row">
-          <button class="btn btn-go" id="print-go" type="button">🖨️ Imprimir</button>
+          <button class="btn btn-primary" id="print-go" type="button">🖨️ Imprimir</button>
         </div>
-      </div>
-    </section>
-
-    <!-- Aprende -->
-    <section class="view" id="view-learn" hidden>
-      <div class="view-head">
-        <button class="round-btn" data-go="home" type="button" aria-label="Volver">←</button>
-        <h1>Aprende el ábaco</h1>
-      </div>
-
-      <div class="panel">
-        <h2>Juega con el soroban</h2>
-        <p>Toca o desliza las cuentas. <b>Las de abajo valen 1</b> y <b>la de arriba vale 5</b>. Solo cuentan las que tocan la barra.</p>
-        <div class="free-number" id="free-number">0</div>
-        <div class="learn-abacus" id="free-abacus"></div>
-        <div class="row center"><button class="btn btn-soft" id="free-clear" type="button">Limpiar</button></div>
-      </div>
-
-      <div class="grid-2">
-        <div class="panel">
-          <h2>Amigos del 5</h2>
-          <p>Cuando no caben las cuentas de abajo, usamos la de arriba.</p>
-          <div class="friends"><span>1 + 4</span><span>2 + 3</span></div>
-          <p class="muted">Sumar 4 = pon 5 y quita 1. Sumar 3 = pon 5 y quita 2.</p>
-        </div>
-        <div class="panel">
-          <h2>Amigos del 10</h2>
-          <p>Cuando no cabe en la varilla, llevamos 1 a la izquierda.</p>
-          <div class="friends"><span>1 + 9</span><span>2 + 8</span><span>3 + 7</span><span>4 + 6</span><span>5 + 5</span></div>
-          <p class="muted">Sumar 9 = quita 1 y suma 10. Sumar 7 = quita 3 y suma 10.</p>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>Míralo paso a paso</h2>
-        <div class="row">
-          <input type="number" class="text-input small" id="demo-a" value="4" min="0" max="999" aria-label="Primer número">
-          <select id="demo-op" class="text-input small" aria-label="Operación"><option value="+">+</option><option value="-">−</option></select>
-          <input type="number" class="text-input small" id="demo-b" value="3" min="0" max="999" aria-label="Segundo número">
-          <button class="btn btn-go" id="demo-start" type="button">Ver</button>
-        </div>
-        <div class="row examples" id="demo-examples"></div>
-        <div class="learn-abacus" id="demo-abacus"></div>
-        <p class="step-text" id="demo-text">Escribe una suma o una resta y pulsa «Ver».</p>
-        <div class="row center">
-          <button class="btn btn-soft" id="demo-prev" type="button">◀ Atrás</button>
-          <button class="btn btn-soft" id="demo-next" type="button">Siguiente ▶</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>Para los padres</h2>
-        <p>Video de referencia: <a href="https://youtu.be/0tN_roxCV3A" target="_blank" rel="noopener">El secreto del cálculo japonés: aprende soroban paso a paso</a>.</p>
-        <p class="muted">Postura: el ábaco plano sobre la mesa. El <b>pulgar</b> sube las cuentas de tierra; el <b>índice</b> las baja y mueve la cuenta del cielo. Se calcula de izquierda a derecha.</p>
       </div>
     </section>
 
     <!-- Padres -->
     <section class="view" id="view-parents" hidden>
-      <div class="view-head">
-        <button class="round-btn" data-go="home" type="button" aria-label="Volver">←</button>
-        <h1>Panel de padres</h1>
-      </div>
+      <div class="view-head"><h1>Padres</h1></div>
 
-      <div class="panel" id="parents-gate">
+      <div class="card" id="parents-gate">
         <h2>Solo para adultos</h2>
         <p>¿Cuánto es <b id="gate-question"></b>?</p>
         <div class="row">
           <input type="number" class="text-input small" id="gate-answer" aria-label="Respuesta">
-          <button class="btn btn-go" id="gate-go" type="button">Entrar</button>
+          <button class="btn btn-primary" id="gate-go" type="button">Entrar</button>
         </div>
       </div>
 
       <div id="parents-content" hidden>
-        <div class="panel">
-          <h2>Perfil y nivel</h2>
+        <div class="card">
+          <h2>Hojas para imprimir</h2>
+          <p class="muted">Practica en papel con el ábaco real, y la caligrafía de los números con lápiz.</p>
+          <div class="row">
+            <button class="btn btn-primary" data-go="print" type="button">🖨️ Hojas del nivel</button>
+            <button class="btn btn-soft" id="tile-caligrafia" type="button">✏️ Hojas de caligrafía</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Progreso</h2>
+          <div class="stats" id="route-stats"></div>
+          <p class="why" id="route-rule"></p>
+          <p class="muted" id="level-progress"></p>
+          <p class="suggestion" id="level-suggestion" hidden></p>
+        </div>
+
+        <div class="card">
+          <h2>Ajustes</h2>
           <div class="form-grid">
             <label>Nombre <input id="set-name" class="text-input" maxlength="20"></label>
             <label>Nivel actual <select id="set-level"></select></label>
@@ -341,22 +354,20 @@
           <label class="check"><input type="checkbox" id="set-sound"> Sonidos</label>
           <label class="check"><input type="checkbox" id="set-rtl"> Con teclado, en sumas en columna, escribir la respuesta de derecha a izquierda (unidades primero)</label>
           <label class="check"><input type="checkbox" id="set-labels"> Mostrar U, D, C debajo del ábaco</label>
-          <p class="muted" id="level-progress"></p>
-          <p class="suggestion" id="level-suggestion" hidden></p>
         </div>
 
-        <div class="panel">
-          <h2>Cómo avanza de nivel</h2>
-          <p class="muted">Una sesión está <b>dominada</b> con al menos <b>90 % de aciertos</b> al primer intento y dentro del tiempo objetivo. El nivel se supera con <b>2 sesiones dominadas entre las últimas 3</b>, en pantalla o en papel. Si no, se repite el nivel: repetir es parte del método. El mapa completo está en <a href="#" data-go="route">Mi camino</a>.</p>
+        <div class="card">
+          <h2>Cómo avanza</h2>
+          <p class="muted">Cada nivel se aprende en tres pasos: <b>Mira</b> (Mapi enseña), <b>Juntos</b> (lo hace en su ábaco siguiendo a Mapi) y <b>Tú</b> (practica sin ayuda). Una sesión está <b>dominada</b> con al menos <b>90 % de aciertos</b> al primer intento y dentro del tiempo objetivo. El nivel se supera con <b>2 sesiones dominadas entre las últimas 3</b>, en pantalla o en papel.</p>
         </div>
 
-        <div class="panel">
+        <div class="card">
           <h2>Instalar en el celular o el computador</h2>
-          <p class="muted" id="install-help">En Android o en Chrome/Edge: menú ⋮ → <b>Instalar aplicación</b>. En iPhone o iPad: botón Compartir → <b>Agregar a pantalla de inicio</b>. Una vez instalada funciona sin internet.</p>
-          <button class="btn btn-go" id="install-btn" type="button" hidden>📲 Instalar Mi Ábaco</button>
+          <p class="muted">En Android o en Chrome/Edge: menú ⋮ → <b>Instalar aplicación</b>. En iPhone o iPad: botón Compartir → <b>Agregar a pantalla de inicio</b>. Una vez instalada funciona sin internet.</p>
+          <button class="btn btn-primary" id="install-btn" type="button" hidden>📲 Instalar Mi Ábaco</button>
         </div>
 
-        <div class="panel">
+        <div class="card">
           <h2>Historial</h2>
           <div class="table-wrap">
             <table class="history">
@@ -366,7 +377,7 @@
           </div>
         </div>
 
-        <div class="panel">
+        <div class="card">
           <h2>Copia de seguridad</h2>
           <p class="muted">El progreso se guarda en este dispositivo. Exporta una copia para pasarla a otro.</p>
           <div class="row">
@@ -381,6 +392,14 @@
     <!-- Hojas para imprimir: fuera de las vistas para poder imprimir desde cualquiera -->
     <div id="print-sheets" class="sheets" hidden></div>
   </div>
+
+  <!-- Barra inferior: solo cuatro lugares, sin atajos que salten la lección -->
+  <nav class="tabbar" id="tabbar" aria-label="Secciones">
+    <button type="button" data-go="home" data-tab="home"><span aria-hidden="true">🗺️</span>Camino</button>
+    <button type="button" data-go="awards" data-tab="awards"><span aria-hidden="true">🏅</span>Logros</button>
+    <button type="button" data-go="abacus" data-tab="abacus"><span aria-hidden="true">🧮</span>Ábaco</button>
+    <button type="button" data-go="parents" data-tab="parents"><span aria-hidden="true">👨‍👩‍👧</span>Padres</button>
+  </nav>
 
   <script src="js/curriculum.js"></script>
   <script src="js/soroban.js"></script>

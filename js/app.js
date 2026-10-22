@@ -1,7 +1,7 @@
 /*
- * Ábaco – la aplicación: inicio con racha, sesión diaria guiada por Mapi
- * (Mira → Juntos → Tú), hoja en papel con cronómetro y corrección,
- * hojas imprimibles, sección para aprender y panel de padres.
+ * Ábaco – la aplicación: el camino de niveles con su progreso, sesiones guiadas
+ * por Mapi (Mira → Juntos → Tú) con ayuda «?», logros, práctica en papel,
+ * ábaco libre y el área de padres (hojas para imprimir, ajustes e historial).
  */
 (function () {
   'use strict';
@@ -24,6 +24,8 @@
       levelStart: 0,
       settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true },
       lessons: {},
+      levelStars: {},
+      stars: 0,
       history: []
     };
   }
@@ -36,6 +38,7 @@
         Object.assign(data, saved);
         data.settings = Object.assign(defaults().settings, saved.settings);
         data.lessons = Object.assign({}, saved.lessons);
+        data.levelStars = Object.assign({}, saved.levelStars);
       }
     } catch (e) {
       // Sin almacenamiento disponible: la app funciona igual, sin recordar.
@@ -236,12 +239,14 @@
     document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'view-' + view; });
     document.body.classList.toggle('in-session', view === 'session');
     $('print-sheets').hidden = view !== 'print';
+    const tab = { home: 'home', awards: 'awards', abacus: 'abacus', parents: 'parents', print: 'parents', paper: 'home', result: 'home' }[view];
+    document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
     window.scrollTo(0, 0);
     if (view === 'home') renderHome();
     if (view === 'print') renderPrint();
-    if (view === 'learn') renderLearn();
+    if (view === 'abacus') renderAbacus();
     if (view === 'parents') renderParents();
-    if (view === 'route') renderRoute();
+    if (view === 'awards') renderAwards();
     if (view === 'paper') renderPaper();
   }
 
@@ -255,28 +260,62 @@
 
   /* ---------- Inicio ---------- */
 
-  function homeMessage(streak) {
+  function homeMessage(streak, level) {
     const name = data.name;
     const days = n => `${n} ${n === 1 ? 'día' : 'días'} seguidos`;
-    if (!name) return '¡Hola! Soy Mapi y te voy a acompañar con el ábaco. ¿Cómo te llamas?';
-    if (streak.doneToday) return `¡Ya practicaste hoy, ${name}! Llevas ${days(streak.current)}. ¿Una hoja de caligrafía?`;
+    if (!name) return '¡Hola! Soy Mapi y te voy a enseñar a usar el ábaco, paso a paso. ¿Cómo te llamas?';
+    if (!data.lessons[level.id]) return `¡Hola, ${name}! Hoy aprendemos algo nuevo: ${level.name}. Yo te muestro primero.`;
+    if (streak.doneToday) return `¡Ya practicaste hoy, ${name}! Llevas ${days(streak.current)}. ¿Otra ronda?`;
     if (streak.current) return `¡Hola, ${name}! Llevas ${days(streak.current)}. ¡No rompamos la racha!`;
-    return `¡Hola, ${name}! Toca el botón verde y practicamos juntos.`;
+    return `¡Hola, ${name}! Sigamos practicando: ${level.name}.`;
+  }
+
+  // Estado de los tres pasos de un nivel: Mira, Juntos y Tú (sesiones dominadas).
+  function stepsState(level) {
+    const seen = !!data.lessons[level.id];
+    const stats = levelStats(level.id);
+    return [
+      { icon: '👀', label: 'Mira', note: seen ? 'Hecho' : 'Mapi enseña', state: seen ? 'is-done' : 'is-current' },
+      { icon: '🤝', label: 'Juntos', note: seen ? 'Hecho' : 'Con Mapi', state: seen ? 'is-done' : '' },
+      { icon: '⭐', label: 'Tú', note: `${stats.recentPassed} de 2`, state: seen ? 'is-current' : '' }
+    ];
+  }
+
+  function renderSteps(list, level) {
+    list.innerHTML = '';
+    stepsState(level).forEach(st => {
+      const li = document.createElement('li');
+      li.className = st.state;
+      li.appendChild(textSpan(st.icon, 'step-icon'));
+      li.appendChild(textSpan(st.label));
+      const note = document.createElement('small');
+      note.textContent = st.note;
+      li.appendChild(note);
+      list.appendChild(li);
+    });
   }
 
   function renderHome() {
     const level = C.getLevel(data.levelId);
     const streak = streakInfo();
+    const seen = !!data.lessons[level.id];
     $('home-avatar').textContent = data.avatar;
     $('home-title').textContent = data.name ? `¡Hola, ${data.name}!` : '¡Hola!';
     $('home-date').textContent = new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' });
     $('onboarding').hidden = !!data.name;
-    $('home-bubble').textContent = homeMessage(streak);
+    $('home-bubble').textContent = homeMessage(streak, level);
     $('home-bubble').className = 'bubble';
-
     $('streak-count').textContent = streak.current;
-    $('streak-unit').textContent = streak.current === 1 ? 'día seguido' : 'días seguidos';
-    $('streak-best').textContent = streak.best ? `Mejor racha: ${streak.best}` : 'Cada día practicado sube una cuenta.';
+    $('home-stars').textContent = data.stars || 0;
+    $('streak-best').textContent = streak.best ? `Mejor racha: ${streak.best} 🔥` : '';
+
+    const mod = C.moduleOf(level.id);
+    $('hero-module').textContent = `Módulo ${C.MODULES.indexOf(mod) + 1} · ${mod.title}`;
+    $('today-level').textContent = level.name;
+    renderSteps($('today-steps'), level);
+    $('start-session').textContent = seen ? '▶ Practicar' : '▶ Empezar la lección';
+    $('paper-start').hidden = !seen;
+    $('today-why').textContent = seen ? recommendation(level, levelStats(level.id)) : 'Primero miras, después lo hacemos juntos y al final lo intentas tú.';
 
     const week = $('week-strip');
     week.innerHTML = '';
@@ -288,16 +327,71 @@
       li.classList.toggle('is-today', i === 0);
       week.appendChild(li);
     }
+    renderMap();
+  }
 
-    $('today-level').textContent = `${level.id} · ${level.name}`;
-    $('today-why').textContent = recommendation(level, levelStats(level.id));
-    const todays = data.history.filter(h => h.date === today());
-    if (todays.length) {
-      const best = Math.max(...todays.map(h => starsFor(h.correct, h.total)));
-      $('today-status').textContent = `✅ Hecho hoy ${'⭐'.repeat(best)} · ¿otra ronda?`;
-    } else {
-      $('today-status').textContent = `${data.settings.perSession} ejercicios · unos 10 minutos`;
-    }
+  /* --- El camino: módulos y niveles con su progreso --- */
+
+  const MODULE_COLORS = ['#3d7bff', '#8a5cf6', '#ff8a3d', '#16b3a3', '#ec5f9a', '#22a35a', '#4f5bd5', '#e0a100'];
+
+  function renderMap() {
+    const current = C.getLevel(data.levelId);
+    const idx = C.levelIndex(current.id);
+    const total = C.LEVELS.length;
+    $('route-summary').textContent = `${idx} de ${total} niveles superados`;
+    $('route-bar').style.width = Math.round((100 * idx) / total) + '%';
+    const box = $('route-modules');
+    box.innerHTML = '';
+    C.MODULES.forEach((mod, m) => {
+      const first = C.levelIndex(mod.levels[0].id);
+      const done = mod.levels.filter(l => C.levelIndex(l.id) < idx).length;
+      const card = document.createElement('section');
+      card.className = 'module' + (first > idx ? ' is-locked' : '');
+      const head = document.createElement('div');
+      head.className = 'module-head';
+      head.style.background = MODULE_COLORS[m % MODULE_COLORS.length];
+      const text = document.createElement('div');
+      const h = document.createElement('h3');
+      h.textContent = `${m + 1}. ${mod.title}`;
+      text.appendChild(h);
+      const p = document.createElement('p');
+      p.textContent = mod.objective;
+      text.appendChild(p);
+      head.appendChild(text);
+      head.appendChild(textSpan(first > idx ? '🔒' : `${done}/${mod.levels.length}`, 'module-count'));
+      card.appendChild(head);
+
+      // Solo se dibuja el camino del módulo en curso y de los ya hechos.
+      if (first <= idx) {
+        const list = document.createElement('ol');
+        list.className = 'path';
+        mod.levels.forEach(l => {
+          const i = C.levelIndex(l.id);
+          const li = document.createElement('li');
+          li.className = i < idx ? 'is-done' : i === idx ? 'is-current' : 'is-locked';
+          if (i === idx) li.appendChild(textSpan(data.lessons[l.id] ? '¡Sigue aquí!' : '¡Empieza aquí!', 'node-start'));
+          const node = document.createElement('button');
+          node.type = 'button';
+          node.className = 'node';
+          node.textContent = i < idx ? '✓' : i === idx ? '★' : '🔒';
+          node.setAttribute('aria-label', `${l.id} ${l.name}`);
+          node.addEventListener('click', () => {
+            if (i <= idx) startSession(l.id);
+            else {
+              mapi('home-bubble', `Ese nivel se abre cuando termines «${current.name}». ¡Vas muy bien!`, 'try');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          });
+          li.appendChild(node);
+          li.appendChild(textSpan(l.name, 'node-label'));
+          const stars = data.levelStars[l.id] || 0;
+          li.appendChild(textSpan(i <= idx ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '', 'node-stars'));
+          list.appendChild(li);
+        });
+        card.appendChild(list);
+      }
+      box.appendChild(card);
+    });
   }
 
   $('home-speak').addEventListener('click', () => say($('home-bubble').textContent));
@@ -321,7 +415,7 @@
     data.name = name;
     save();
     renderHome();
-    say(homeMessage(streakInfo()));
+    say(homeMessage(streakInfo(), C.getLevel(data.levelId)));
   });
 
   $('home-avatar').addEventListener('click', () => {
@@ -360,9 +454,13 @@
       start: Date.now(),
       timer: null
     };
+    // Medallas que ya tenía al empezar, para celebrar las nuevas al final (también las de la lección).
+    session.badgesBefore = wonBadges().map(b => b.id);
     const seen = !!data.lessons[level.id];
     const mod = C.moduleOf(level.id);
-    $('briefing-level').textContent = `${level.id} · ${level.name}` + (session.review ? ' (repaso)' : '');
+    $('briefing-module').textContent = `Módulo ${C.MODULES.indexOf(mod) + 1} · ${mod.title}`;
+    $('briefing-level').textContent = level.name + (session.review ? ' (repaso)' : '');
+    renderSteps($('briefing-steps'), level);
     const concepts = $('briefing-concepts');
     concepts.innerHTML = '';
     mod.concepts.forEach(c => {
@@ -408,6 +506,27 @@
     else startLesson(3);
   });
   $('briefing-lesson').addEventListener('click', () => startLesson(2));
+
+  // Botón «?»: la guía del nivel en cualquier momento. Durante la práctica se
+  // pausa el tiempo y al terminar se vuelve al mismo ejercicio.
+  $('session-help').addEventListener('click', () => {
+    if (!session || stepper) return;
+    if ($('exercise').hidden) { startLesson(data.lessons[session.level.id] ? 2 : 3); return; }
+    const pausedAt = Date.now();
+    clearInterval(session.timer);
+    playToken++;
+    const { steps, rods } = C.lessonSteps(session.level.id);
+    runSteps({
+      phase: 'mira', steps, rods, onDone: () => {
+        session.start += Date.now() - pausedAt;
+        session.timer = setInterval(updateTimer, 1000);
+        setStage('exercises');
+        setPhase('tu');
+        $('keypad').hidden = !cur || cur.useAbacus || cur.ex.type === 'poner' || cur.ex.type === 'opciones';
+        mapi('bubble', '¡Ahora inténtalo tú!');
+      }
+    });
+  });
 
   /* --- «Mira» y «Juntos»: pasos con el ábaco en pantalla --- */
 
@@ -963,8 +1082,15 @@
   }
 
   function showResult({ levelId, correct, total, seconds, source, review }) {
-    const { entry, levelUp, stats } = recordSession({ levelId, correct, total, seconds, source });
+    const before = new Set(source === 'pantalla' && session ? session.badgesBefore : wonBadges().map(b => b.id));
     const stars = starsFor(correct, total);
+    data.stars = (data.stars || 0) + stars;
+    data.levelStars[levelId] = Math.max(data.levelStars[levelId] || 0, stars);
+    const { entry, levelUp, stats } = recordSession({ levelId, correct, total, seconds, source });
+    const fresh = wonBadges().filter(b => !before.has(b.id));
+    const badgesBox = $('result-badges');
+    badgesBox.innerHTML = '';
+    fresh.forEach(b => badgesBox.appendChild(badgeCard(b, true, '¡Nueva medalla!')));
     $('result-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
     const title = stars === 3 ? '¡Increíble!' : stars === 2 ? '¡Muy bien!' : '¡Buen trabajo!';
     $('result-title').textContent = title;
@@ -976,7 +1102,7 @@
     $('result-more').dataset.level = review ? levelId : '';
     $('result-more').hidden = source === 'papel';
     show('result');
-    say(`${title} ${correct} de ${total}. ${message}`);
+    say(`${title} ${correct} de ${total}. ${message}` + (fresh.length ? ` ¡Ganaste la medalla ${fresh[0].name}!` : ''));
     soundWin();
     confetti(stars === 3 || levelUp ? 70 : 30);
   }
@@ -1361,13 +1487,13 @@
 
   $('print-go').addEventListener('click', () => { buildSheets(); window.print(); });
 
-  /* ---------- Aprende ---------- */
+  /* ---------- Ábaco libre ---------- */
 
   let freeSoroban = null;
   let demoSoroban = null;
   let demo = { steps: [], i: 0 };
 
-  function renderLearn() {
+  function renderAbacus() {
     if (freeSoroban) return;
     freeSoroban = new window.Soroban($('free-abacus'), {
       rods: 4, showDigits: true, showLabels: true,
@@ -1428,7 +1554,7 @@
   $('demo-prev').addEventListener('click', () => { if (demo.i > 0) { demo.i--; showDemoStep(); } });
   $('demo-next').addEventListener('click', () => { if (demo.i < demo.steps.length - 1) { demo.i++; showDemoStep(); } });
 
-  /* ---------- Mi camino ---------- */
+  /* ---------- Logros ---------- */
 
   function statTile(label, value) {
     const div = document.createElement('div');
@@ -1437,59 +1563,60 @@
     return div;
   }
 
-  function renderRoute() {
-    const level = C.getLevel(data.levelId);
-    const idx = C.levelIndex(level.id);
-    const total = C.LEVELS.length;
-    const stats = levelStats(level.id);
-    $('route-summary').textContent = `Nivel ${idx + 1} de ${total} · ${level.id} ${level.name}`;
-    $('route-bar').style.width = Math.round((100 * idx) / total) + '%';
-    const tiles = $('route-stats');
-    tiles.innerHTML = '';
-    tiles.appendChild(statTile('Precisión', stats.accuracy === null ? '—' : stats.accuracy + ' %'));
-    tiles.appendChild(statTile('Constancia', stats.consistency === null ? '—' : stats.consistency + ' %'));
-    tiles.appendChild(statTile('Prácticas', String(stats.practices)));
-    tiles.appendChild(statTile('Tiempo medio', stats.avgSeconds === null ? '—' : stats.avgSeconds + ' s'));
-    $('route-rule').textContent = recommendation(level, stats);
-
-    const box = $('route-modules');
-    box.innerHTML = '';
+  // Medallas: se ganan practicando, con constancia y al terminar cada módulo.
+  const MODULE_ICONS = ['🧮', '➕', '🖐️', '🔟', '2️⃣', '3️⃣', '📜', '🧠'];
+  function badgeList() {
+    const list = [
+      { id: 'leccion1', icon: '🎓', name: 'Primera lección', desc: 'Terminar una lección con Mapi', won: d => Object.keys(d.lessons).length >= 1 },
+      { id: 'sesion1', icon: '🌱', name: 'Primer día', desc: 'Terminar una sesión', won: d => d.history.length >= 1 },
+      { id: 'perfecta', icon: '💯', name: 'Sesión perfecta', desc: 'Todo bien al primer intento', won: d => d.history.some(h => h.correct === h.total) },
+      { id: 'papel', icon: '📄', name: 'Con lápiz', desc: 'Hacer una práctica en papel', won: d => d.history.some(h => h.source === 'papel') },
+      { id: 'racha3', icon: '🔥', name: '3 días seguidos', desc: 'Practicar 3 días seguidos', won: (d, s) => s.best >= 3 },
+      { id: 'racha7', icon: '🔥', name: 'Una semana', desc: 'Practicar 7 días seguidos', won: (d, s) => s.best >= 7 },
+      { id: 'racha30', icon: '🏆', name: 'Un mes', desc: 'Practicar 30 días seguidos', won: (d, s) => s.best >= 30 },
+      { id: 'estrellas50', icon: '🌟', name: '50 estrellas', desc: 'Juntar 50 estrellas', won: d => (d.stars || 0) >= 50 }
+    ];
     C.MODULES.forEach((mod, m) => {
-      const card = document.createElement('div');
-      card.className = 'panel module';
-      const first = C.levelIndex(mod.levels[0].id);
-      const last = C.levelIndex(mod.levels[mod.levels.length - 1].id);
-      card.classList.toggle('is-locked', first > idx);
-      card.appendChild(textSpan(`Módulo ${m + 1}` + (last < idx ? ' · completado ✅' : first > idx ? ' · 🔒' : ' · en curso'), 'eyebrow'));
-      const h = document.createElement('h2');
-      h.textContent = mod.title;
-      card.appendChild(h);
-      card.appendChild(textSpan(mod.objective, 'muted module-objective'));
-      const list = document.createElement('ol');
-      list.className = 'path';
-      mod.levels.forEach(l => {
-        const i = C.levelIndex(l.id);
-        const li = document.createElement('li');
-        li.className = i < idx ? 'is-done' : i === idx ? 'is-current' : 'is-locked';
-        li.appendChild(textSpan(i < idx ? '✓' : i === idx ? '★' : '🔒', 'path-dot'));
-        const info = document.createElement('div');
-        info.className = 'path-info';
-        info.appendChild(textSpan(`${l.id} · ${l.name}`, 'path-name'));
-        info.appendChild(textSpan(l.tip, 'path-tip'));
-        li.appendChild(info);
-        if (i <= idx) {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'btn ' + (i === idx ? 'btn-go' : 'btn-soft');
-          btn.textContent = i === idx ? '▶ Practicar' : 'Repasar';
-          btn.addEventListener('click', () => startSession(l.id));
-          li.appendChild(btn);
-        }
-        list.appendChild(li);
+      const last = mod.levels[mod.levels.length - 1];
+      list.push({
+        id: 'modulo' + (m + 1), icon: MODULE_ICONS[m], name: mod.title, desc: `Terminar el módulo ${m + 1}`,
+        won: d => C.levelIndex(d.levelId) > C.levelIndex(last.id) || (m === C.MODULES.length - 1 && levelStats(last.id).recentPassed >= 2)
       });
-      card.appendChild(list);
-      box.appendChild(card);
     });
+    return list;
+  }
+
+  function wonBadges() {
+    const streak = streakInfo();
+    return badgeList().filter(b => b.won(data, streak));
+  }
+
+  function badgeCard(b, won, note) {
+    const div = document.createElement('div');
+    div.className = 'badge' + (won ? ' is-won' : '');
+    div.appendChild(textSpan(b.icon, 'badge-icon'));
+    div.appendChild(textSpan(b.name, ''));
+    div.lastChild.style.fontWeight = '800';
+    const small = document.createElement('small');
+    small.textContent = note || b.desc;
+    div.appendChild(small);
+    return div;
+  }
+
+  function renderAwards() {
+    const streak = streakInfo();
+    const won = new Set(wonBadges().map(b => b.id));
+    const tiles = $('awards-stats');
+    tiles.innerHTML = '';
+    tiles.appendChild(statTile('Estrellas', `⭐ ${data.stars || 0}`));
+    tiles.appendChild(statTile('Racha actual', `🔥 ${streak.current}`));
+    tiles.appendChild(statTile('Sesiones', String(data.history.length)));
+    tiles.appendChild(statTile('Niveles superados', `${C.levelIndex(data.levelId)} / ${C.LEVELS.length}`));
+    const grid = $('awards-grid');
+    grid.innerHTML = '';
+    const list = badgeList();
+    list.forEach(b => grid.appendChild(badgeCard(b, won.has(b.id))));
+    $('awards-count').textContent = `${won.size} de ${list.length} medallas`;
   }
 
   /* ---------- Padres ---------- */
@@ -1516,6 +1643,13 @@
     $('set-rtl').checked = data.settings.rtl;
     $('set-labels').checked = data.settings.labels;
     const stats = levelStats(level.id);
+    const tiles = $('route-stats');
+    tiles.innerHTML = '';
+    tiles.appendChild(statTile('Precisión', stats.accuracy === null ? '—' : stats.accuracy + ' %'));
+    tiles.appendChild(statTile('Constancia', stats.consistency === null ? '—' : stats.consistency + ' %'));
+    tiles.appendChild(statTile('Prácticas', String(stats.practices)));
+    tiles.appendChild(statTile('Tiempo medio', stats.avgSeconds === null ? '—' : stats.avgSeconds + ' s'));
+    $('route-rule').textContent = `${level.id} · ${level.name}: ${recommendation(level, stats)}`;
     $('level-progress').textContent = `Nivel ${level.id}: ${stats.recentPassed} de 2 sesiones dominadas (entre las últimas 3). Tiempo objetivo: ${level.targetSec} s por ejercicio.`;
     $('install-btn').hidden = !installPrompt;
 
@@ -1539,7 +1673,7 @@
         .forEach(text => { tr.insertCell().textContent = text; });
       const del = document.createElement('button');
       del.type = 'button';
-      del.className = 'round-btn small';
+      del.className = 'icon-btn small';
       del.textContent = '✕';
       del.setAttribute('aria-label', 'Borrar sesión');
       del.addEventListener('click', () => {

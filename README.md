@@ -9,13 +9,19 @@ Todo es **evolutivo**. La ruta empieza por conocer el ábaco y contar, y cada ni
 2. **🤝 Juntos:** ella hace 3 ejercicios en su ábaco siguiendo cada paso con Mapi.
 3. **⭐ Tú:** practica sin ayuda. Solo esta parte cuenta para subir de nivel.
 
-- 🔥 **Racha:** cada día practicado sube una cuenta en la varilla de la semana.
-- 🧮 **Sesión diaria:** la primera vez en un nivel hace Mira → Juntos → Tú; después va directo a practicar, y puede volver a ver la lección. Resuelve en su ábaco y responde con un teclado grande, comparando su ábaco con la imagen o eligiendo entre opciones. Si falla dos veces, ve la solución paso a paso.
-- 📄 **Hoja en papel:** se imprime la hoja del día, un cronómetro mide el tiempo mientras trabaja y al final se corrige tocando las respuestas equivocadas.
-- ✏️ **Caligrafía, solo en papel:** hojas de los números al estilo Kumon 4A (modelo con orden de trazo, puntos para repasar y casillas para escribir). Cada hoja diaria empieza con una fila de caligrafía.
-- 🖨️ **Imprimir:** hojas diarias por nivel (las del día coinciden con la sesión) y hoja de respuestas.
-- 🗺️ **Mi camino:** la ruta por módulos, con progreso, estadísticas y repaso de niveles anteriores.
-- 👨‍👩‍👧 **Padres:** nivel, tipo de ábaco (real o en pantalla), voz, historial y copia de seguridad.
+La app tiene cuatro secciones en la barra inferior:
+
+- 🗺️ **Camino (inicio):**
+  - La tarjeta «Continuar» muestra el nivel actual y el estado de sus tres pasos. La lección siempre va antes de practicar.
+  - Debajo está el mapa de la ruta: niveles superados con ✓ y estrellas, el nivel actual resaltado y los siguientes bloqueados.
+  - También muestra la racha de la semana. Cuando ya vio la lección, puede hacer la práctica en papel con cronómetro y corrección.
+- 🏅 **Logros:** estrellas, racha, sesiones y un álbum de medallas: primera lección, sesión perfecta, rachas y una por cada módulo terminado.
+- 🧮 **Ábaco:** ábaco libre para jugar, y «¿Cómo se hace?» para ver paso a paso cualquier suma o resta.
+- 👨‍👩‍👧 **Padres** (con una multiplicación para entrar):
+  - hojas para imprimir del nivel y de caligrafía (estilo Kumon 4A, solo en papel);
+  - progreso, ajustes (nivel, tipo de ábaco, voz), historial y copia de seguridad.
+
+Durante la sesión, el botón **«?»** abre la guía del nivel en cualquier momento. Mientras está abierta el tiempo se pausa, y al terminar se vuelve al mismo ejercicio.
 
 Está inspirada en Kumon (hojas diarias por niveles), Smartick (sesiones cortas con respuesta inmediata) y la ruta «Soroban desde cero» de Supercerebros. El análisis está en [docs/analisis-plataformas.md](docs/analisis-plataformas.md).
 
@@ -44,10 +50,10 @@ El progreso se guarda en el dispositivo. Para pasarlo a otro, usa *Padres → Ex
 
 | Archivo | Qué contiene |
 |---|---|
-| `index.html` | Vistas: inicio, sesión (Mira, Juntos, Tú), resultado, hoja en papel, mi camino, imprimir, aprende y padres |
-| `css/app.css` | Estilo «juguete de madera», diseño para celular y computador, e impresión |
+| `index.html` | Vistas: camino, logros, ábaco libre, padres, sesión (Mira, Juntos, Tú), resultado, práctica en papel e imprimir; Mapi en SVG |
+| `css/app.css` | Estilo claro y moderno (cielo, tarjetas blancas, azul y naranja), celular y computador, e impresión |
 | `js/curriculum.js` | 25 niveles en 8 módulos con sus lecciones, generadores de ejercicios con semilla y pasos para enseñar, guiar y explicar |
 | `js/soroban.js` | Soroban en SVG: tocar o deslizar las cuentas, flechas del teclado |
 | `js/caligrafia.js` | Trazos de los números 0–9 con su orden, para las hojas de caligrafía |
-| `js/app.js` | Lógica de la app: Mapi y su voz, racha, sesión, avance de nivel, hoja en papel e impresión |
+| `js/app.js` | Lógica de la app: mapa de progreso, sesión con ayuda «?», estrellas y medallas, Mapi y su voz, práctica en papel, impresión y padres |
 | `manifest.webmanifest`, `sw.js`, `icons/` | App instalable y sin conexión |

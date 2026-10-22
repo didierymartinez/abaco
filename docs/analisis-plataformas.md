@@ -133,7 +133,27 @@ La primera vez en un nivel se hacen los tres pasos. Las siguientes sesiones van 
 
 **Caligrafía solo en papel:** se quitó el trazado en pantalla. Quedan las hojas de caligrafía y una fila de caligrafía en cada hoja diaria. En las hojas de contar, la respuesta se escribe a mano («6 → __»).
 
-## 7. Ideas para siguientes versiones
+## 7. Rediseño v4: moderno, guiado y con progreso (referencia: Smartick)
+
+**Comentarios al probar la v3:**
+- El diseño se veía viejo.
+- Había menús abajo que confundían: «Aprende» tenía tutoriales, pero el primer botón empezaba como si la niña ya supiera.
+- No se veía el progreso.
+
+**Lo que hace bien la app infantil de Smartick** (según su web, smartick.com, y la ayuda sobre el Mundo Virtual):
+- Estética limpia y luminosa: blanco, celeste y nubes, con un acento naranja.
+- Una sola entrada a la sesión del día.
+- Ayuda «?» y tutoriales dentro del ejercicio.
+- Recompensas (ticks, avatar, Mundo Virtual) y progreso visible.
+
+**Cambios:**
+1. **El inicio es el camino.** Una sola tarjeta «Continuar» con los pasos Mira / Juntos / Tú del nivel actual y un mapa de niveles por módulos. Los niveles superados llevan ✓ y estrellas; el actual tiene la marca «¡Empieza aquí!»; los siguientes están bloqueados. Ya no hay atajos que salten la lección, y la práctica en papel solo aparece después de ver la lección.
+2. **Las guías van dentro del nivel:** el botón «?» de la sesión abre la lección, pausa el tiempo y vuelve al mismo ejercicio.
+3. **Progreso y logros:** estrellas por sesión (la mejor de cada nivel se ve en el mapa), racha y 16 medallas. Las medallas nuevas se celebran al terminar.
+4. **Barra inferior con solo cuatro lugares:** Camino, Logros, Ábaco y Padres. Imprimir y caligrafía pasan al área de padres.
+5. **Estilo moderno:** fuentes Baloo 2 y Nunito, tarjetas blancas con sombras suaves, botones con relieve, cielo con nubes y un ábaco azul marino con cuentas naranjas y azules. Mapi pasa a ser un mapache dibujado en SVG en lugar del emoji.
+
+## 8. Ideas para siguientes versiones
 
 - **Evaluación inicial** al estilo Smartick o la «recomendación» de Supercerebros, para elegir el nivel de inicio automáticamente.
 - **Adaptación dentro de la sesión**: si falla dos seguidos, intercalar un ejercicio del nivel anterior.
@@ -142,10 +162,11 @@ La primera vez en un nivel se hacen los tres pasos. Las siguientes sesiones van 
 - **Varios perfiles**, por ejemplo para hermanos.
 - **Sincronizar el progreso** entre dispositivos (hoy se guarda en el navegador y se pasa con exportar e importar).
 - **Multiplicación y división** en el soroban.
-- **Mapi que crece** o se viste con la racha.
+- **Mapi que se viste:** gastar las estrellas en accesorios para Mapi, como el Mundo Virtual de Smartick.
 
 ## Fuentes
 
 - Smartick: [El Espectador](https://www.elespectador.com/actualidad/quince-minutos-diarios-para-aprender-matematicas-con-el-metodo-online-smartick-article/), [BioBioChile](https://www.biobiochile.cl/especial/e-learning/noticias/2020/11/13/smartick-la-plataforma-que-ayuda-a-los-ninos-a-reforzar-matematicas.shtml), [Colombia.com](https://www.colombia.com/tecnologia/aplicaciones/sdi/165664/smartick-el-secreto-contra-los-malos-resultados-en-matematicas-para-ninos), [Educación 3.0](https://www.educaciontrespuntocero.com/experiencias/smartick/)
 - Kumon: la hoja de ejemplo compartida (niveles 4A y B) y el funcionamiento público del método.
+- Smartick (app y recompensas): [smartick.com](https://www.smartick.com/), [¿Qué es el Mundo Virtual?](https://support.smartickmethod.com/en/articles/615497-what-is-the-virtual-world)
 - Soroban: [video de referencia](https://youtu.be/0tN_roxCV3A) y [Supercerebros Play – Soroban desde cero](https://supercerebros.org/play/routes/soroban-desde-cero).
