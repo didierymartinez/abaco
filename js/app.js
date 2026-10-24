@@ -25,7 +25,7 @@
       levelStart: 0,
       settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true, gamesLock: true },
       lessons: {},
-      games: { schulte: { size: 3, best: {} }, span: {}, flash: {}, corsi: {}, log: [] },
+      games: { log: [] },
       levelStars: {},
       stars: 0,
       history: []
@@ -54,6 +54,13 @@
   }
 
   let data = load();
+  normalizeGames();
+
+  // Cada juego guarda su nivel, su registro de partidas y su avance de dominio.
+  function normalizeGames() {
+    window.Juegos.GAMES.forEach(g => { data.games[g.id] = window.Juegos.normalize(g.id, data.games[g.id]); });
+    data.games.log = data.games.log || [];
+  }
 
   /* ---------- Fechas y racha ---------- */
 
@@ -1639,7 +1646,9 @@
       info.className = 'game-info';
       info.appendChild(textSpan(g.name, 'game-name'));
       info.appendChild(textSpan(g.short, 'game-short'));
-      info.appendChild(textSpan(g.record(data.games[g.id]), 'game-record'));
+      const st = data.games[g.id];
+      info.appendChild(textSpan(`Nivel: ${g.levelShort(st.level)}`, 'game-record'));
+      info.appendChild(masteryDots(st));
       card.appendChild(info);
       if (g.id === today_.id) card.appendChild(textSpan('Hoy', 'game-badge'));
       card.addEventListener('click', () => {
@@ -1668,26 +1677,56 @@
     $('game-status').textContent = '';
     $('game-keypad').hidden = true;
     updateVoiceButton();
+    const st = data.games[g.id];
     const board = $('game-board');
     board.innerHTML = '';
     board.appendChild(textSpan(g.icon, 'game-hero'));
-    board.appendChild(textSpan(g.record(data.games[g.id]), 'game-record'));
+    board.appendChild(textSpan(`Nivel: ${g.levelShort(st.level)}`, 'game-level'));
+    board.appendChild(textSpan(`🎯 Meta: ${g.goal(st.level)}`, 'game-goal'));
+    board.appendChild(masteryDots(st));
+    board.appendChild(recentPlays(g, st));
     const play = document.createElement('button');
     play.type = 'button';
     play.className = 'btn btn-primary btn-xl';
     play.textContent = '▶ ¡Jugar!';
     play.addEventListener('click', () => playGame(g));
     board.appendChild(play);
-    mapi('game-bubble', g.intro(data.games[g.id]));
+    mapi('game-bubble', `${g.intro()} Hoy: ${g.levelName(st.level)}. La meta es ${g.goal(st.level)}.`);
+  }
+
+  // Avance hacia el siguiente nivel: partidas seguidas dentro de la meta.
+  function masteryDots(st) {
+    const box = document.createElement('span');
+    box.className = 'mastery';
+    box.appendChild(textSpan('Para subir: ', ''));
+    for (let i = 0; i < J.STREAK_UP; i++) box.appendChild(textSpan('', i < st.streak ? 'dot is-on' : 'dot'));
+    box.setAttribute('aria-label', `${Math.min(st.streak, J.STREAK_UP)} de ${J.STREAK_UP} partidas seguidas dentro de la meta`);
+    return box;
+  }
+
+  // Últimas marcas en este nivel, con ✓ las que cumplieron la meta.
+  function recentPlays(g, st) {
+    const list = J.recent(st, 5);
+    const box = document.createElement('div');
+    box.className = 'recent-plays';
+    if (!list.length) {
+      box.appendChild(textSpan('Aquí verás tus marcas.', 'muted'));
+      return box;
+    }
+    box.appendChild(textSpan('Tus marcas:', 'recent-label'));
+    list.forEach(p => box.appendChild(textSpan(g.scoreText(p.score) + (p.ok ? ' ✓' : ''), 'recent-chip' + (p.ok ? ' is-ok' : ''))));
+    return box;
   }
 
   function playGame(g) {
     stopGame();
     $('game-keypad').hidden = true;
+    const st = data.games[g.id];
+    // «Recuerda el ábaco» no pasa de las cifras que ya sabe leer en la ruta.
+    if (g.id === 'flash') st.level = Math.min(st.level, flashMaxDigits());
     stopCurrentGame = J.start(g.id, {
       board: $('game-board'),
-      state: data.games[g.id],
-      maxDigits: flashMaxDigits(),
+      level: st.level,
       maxOneDigit: C.levelIndex(data.levelId) < C.levelIndex('A3') ? 4 : C.levelIndex(data.levelId) < C.levelIndex('A4') ? 5 : 9,
       Soroban: window.Soroban,
       sounds: { ok: soundOk, bad: soundTry, tick: soundTick },
@@ -1751,7 +1790,10 @@
   function finishGame(g, result) {
     stopCurrentGame = null;
     const before = new Set(wonBadges().map(b => b.id));
-    data.games.log = (data.games.log || []).concat({ date: today(), game: g.id, score: result.score, stars: result.stars }).slice(-200);
+    const st = data.games[g.id];
+    const playedLevel = st.level;
+    const outcome = J.applyResult(g.id, st, result, g.id === 'flash' ? flashMaxDigits() : 0, today());
+    data.games.log = (data.games.log || []).concat({ date: today(), game: g.id, level: playedLevel, score: result.score, stars: result.stars }).slice(-200);
     data.stars = (data.stars || 0) + result.stars;
     save();
     const fresh = wonBadges().filter(b => !before.has(b.id));
@@ -1760,8 +1802,12 @@
     const board = $('game-board');
     board.innerHTML = '';
     board.appendChild(textSpan('⭐'.repeat(result.stars) + '☆'.repeat(3 - result.stars), 'stars'));
-    if (result.record) board.appendChild(textSpan('🏆 ¡Nuevo récord!', 'game-new-record'));
+    board.appendChild(textSpan(result.ok ? '🎯 ¡Meta cumplida!' : `🎯 Meta: ${g.goal(playedLevel)}`, result.ok ? 'game-goal is-ok' : 'game-goal'));
+    if (outcome.record) board.appendChild(textSpan('🏆 ¡Tu mejor marca en este nivel!', 'game-new-record'));
     board.appendChild(textSpan(result.text, 'game-result-text'));
+    board.appendChild(textSpan(outcome.message, outcome.change ? 'game-level-change' : 'game-result-text'));
+    if (!outcome.change) board.appendChild(masteryDots(st));
+    board.appendChild(recentPlays(g, st));
     const badges = document.createElement('div');
     badges.className = 'new-badges';
     fresh.forEach(b => badges.appendChild(badgeCard(b, true, '¡Nueva medalla!')));
@@ -1782,9 +1828,9 @@
     row.appendChild(other);
     board.appendChild(row);
     const cheer = result.stars === 3 ? '¡Increíble!' : result.stars === 2 ? '¡Muy bien!' : '¡Buen trabajo!';
-    mapi('game-bubble', `${cheer} ${result.text}` + (fresh.length ? ` ¡Ganaste la medalla ${fresh[0].name}!` : ''), 'ok');
+    mapi('game-bubble', `${cheer} ${result.text} ${outcome.message}` + (fresh.length ? ` ¡Ganaste la medalla ${fresh[0].name}!` : ''), result.ok ? 'ok' : null);
     soundWin();
-    confetti(result.record || result.stars === 3 ? 60 : 20);
+    confetti(outcome.change > 0 ? 80 : result.ok ? 40 : 15);
   }
 
   $('game-exit').addEventListener('click', () => show('games'));
@@ -1818,9 +1864,9 @@
       { id: 'racha30', icon: '🏆', name: 'Un mes', desc: 'Practicar 30 días seguidos', won: (d, s) => s.best >= 30 },
       { id: 'estrellas50', icon: '🌟', name: '50 estrellas', desc: 'Juntar 50 estrellas', won: d => (d.stars || 0) >= 50 },
       { id: 'juego1', icon: '🎮', name: 'A jugar', desc: 'Terminar un juego de concentración', won: d => (d.games.log || []).length >= 1 },
-      { id: 'schulte4', icon: '🦅', name: 'Ojo de águila', desc: 'Terminar la tabla de Schulte de 4×4', won: d => !!(d.games.schulte.best || {})[4] },
-      { id: 'memoria5', icon: '🐘', name: 'Memoria de elefante', desc: 'Recordar un número de 5 cifras', won: d => (d.games.span.best || 0) >= 5 },
-      { id: 'corsi5', icon: '💡', name: 'Camino de luces', desc: 'Repetir 5 luces en orden', won: d => (d.games.corsi.best || 0) >= 5 }
+      { id: 'schulte4', icon: '🦅', name: 'Ojo de águila', desc: 'Terminar la tabla de Schulte de 4×4', won: d => d.games.schulte.best[4] !== undefined },
+      { id: 'memoria5', icon: '🐘', name: 'Memoria de elefante', desc: 'Recordar un número de 5 cifras', won: d => (d.games.span.best[5] || 0) >= 1 },
+      { id: 'corsi5', icon: '💡', name: 'Camino de luces', desc: 'Repetir 5 luces en orden', won: d => (d.games.corsi.best[5] || 0) >= 1 }
     ];
     C.MODULES.forEach((mod, m) => {
       const last = mod.levels[mod.levels.length - 1];
@@ -1889,7 +1935,11 @@
     $('set-voice-rate').value = String(data.settings.voiceRate || 0.95);
     $('set-sound').checked = data.settings.sound;
     $('set-games-lock').checked = data.settings.gamesLock;
-    $('games-progress').textContent = 'Juegos · ' + J.GAMES.map(g => `${g.name}: ${g.record(data.games[g.id]).replace('Récord: ', '')}`).join(' · ');
+    $('games-progress').textContent = 'Juegos · ' + J.GAMES.map(g => {
+      const st = data.games[g.id];
+      const last = J.recent(st, 3).map(p => g.scoreText(p.score)).join(', ');
+      return `${g.name}: ${g.levelShort(st.level)}, ${st.count} ${st.count === 1 ? 'partida' : 'partidas'} en este nivel, ${Math.min(st.streak, J.STREAK_UP)} de ${J.STREAK_UP} seguidas en la meta` + (last ? ` (últimas: ${last})` : '');
+    }).join(' · ') + `. Sube con al menos ${J.MIN_PLAYS} partidas y ${J.STREAK_UP} seguidas en la meta, en ${J.MIN_DAYS} días distintos; baja si hay ${J.HARD_DOWN} seguidas muy difíciles.`;
     $('set-rtl').checked = data.settings.rtl;
     $('set-labels').checked = data.settings.labels;
     const stats = levelStats(level.id);
@@ -2001,6 +2051,7 @@
         data.settings = Object.assign(defaults().settings, imported.settings);
         data.lessons = Object.assign({}, imported.lessons);
         data.games = Object.assign(defaults().games, imported.games);
+        normalizeGames();
         save();
         renderParents();
         window.alert('¡Progreso importado!');
@@ -2015,6 +2066,7 @@
   $('reset-data').addEventListener('click', () => {
     if (!window.confirm('¿Borrar todo el progreso? No se puede deshacer.')) return;
     data = defaults();
+    normalizeGames();
     save();
     renderParents();
   });

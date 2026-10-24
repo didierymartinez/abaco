@@ -250,6 +250,18 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focu
 .game-new-record { font-weight: 800; color: var(--accent-dark); font-size: 1.2rem; }
 .game-result-text { font-size: 1.15rem; margin: 6px 0 4px; }
 .game-call { margin: 14px 0 0; }
+.game-level { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.3rem; }
+.game-goal { font-weight: 800; color: var(--accent-dark); margin: 4px 0; }
+.game-goal.is-ok { color: var(--success-dark); }
+.game-level-change { font-weight: 800; color: var(--primary-dark); background: var(--primary-soft); border-radius: 14px; padding: 8px 12px; margin: 8px 0; }
+.mastery { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; font-weight: 800; color: var(--muted); margin: 6px 0; }
+.mastery .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--line); }
+.mastery .dot.is-on { background: var(--success); box-shadow: 0 2px 0 var(--success-dark); }
+.recent-plays { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin: 6px 0 14px; }
+.recent-label { font-weight: 800; color: var(--muted); font-size: .85rem; }
+.recent-chip { background: #f4f7fc; border-radius: 999px; padding: 3px 10px; font-weight: 800; font-size: .85rem; color: var(--muted); }
+.recent-chip.is-ok { background: var(--success-soft); color: var(--success-dark); }
+.game-card .mastery { margin: 2px 0 0; }
 
 /* Tabla de Schulte */
 .schulte { display: grid; gap: 8px; width: 100%; max-width: min(420px, 52vh); aspect-ratio: 1; }

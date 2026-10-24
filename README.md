@@ -16,12 +16,12 @@ La app tiene cinco secciones en la barra inferior:
   - Debajo está el mapa de la ruta: niveles superados con ✓ y estrellas, el nivel actual resaltado y los siguientes bloqueados.
   - También muestra la racha de la semana. Cuando ya vio la lección, puede hacer la práctica en papel con cronómetro y corrección.
 - 🎮 **Juegos:** cuatro juegos de concentración y memoria que se abren como premio después de practicar ese día (en pantalla o con la hoja):
-  - **Tabla de Schulte:** tocar los números en orden. Empieza en 3×3 y crece a 4×4 y 5×5.
-  - **Recuerda el número:** ver un número unos segundos y escribirlo. Agrega una cifra cada vez que acierta.
-  - **Recuerda el ábaco:** ver el ábaco un momento y decir qué número era. Solo usa números que ya sabe leer.
-  - **Luces en orden** (bloques de Corsi): repetir el orden en que se encienden las luces.
+  - **Tabla de Schulte:** tocar los números en orden. Niveles 3×3, 4×4 y 5×5, con una meta de tiempo.
+  - **Recuerda el número:** ver un número unos segundos y escribirlo. Nivel = cantidad de cifras; meta: 4 de 5.
+  - **Recuerda el ábaco:** ver el ábaco un momento y decir qué número era. Solo usa números que ya sabe leer; meta: 7 de 8.
+  - **Luces en orden** (bloques de Corsi): repetir el orden en que se encienden las luces. Nivel = cantidad de luces; meta: 4 de 5.
 
-  Cada juego tiene la explicación de Mapi, estrellas y récords.
+  Cada partida se juega en el nivel actual y queda registrada. El nivel **sube solo con dominio**: al menos 4 partidas en ese nivel y las últimas 3 seguidas dentro de la meta, en 2 días distintos. **Baja un nivel** si hay 3 partidas seguidas muy difíciles, para no frustrar. Antes de jugar se ven el nivel, la meta, el avance («Para subir: ●●○») y las últimas marcas.
 - 🏅 **Logros:** estrellas, racha, sesiones y un álbum de medallas: primera lección, sesión perfecta, rachas y una por cada módulo terminado.
 - 🧮 **Ábaco:** ábaco libre para jugar, y «¿Cómo se hace?» para ver paso a paso cualquier suma o resta.
 - 👨‍👩‍👧 **Padres** (con una multiplicación para entrar):

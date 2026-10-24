@@ -8,8 +8,8 @@
  * Al publicar cambios: sube ASSETS en index.html (los ?v= de css y js) y aquí,
  * y sube VERSION.
  */
-const VERSION = 'mi-abaco-v8';
-const ASSETS = '8';
+const VERSION = 'mi-abaco-v9';
+const ASSETS = '9';
 const SHELL = [
   './',
   'index.html',

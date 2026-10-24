@@ -163,12 +163,19 @@ La primera vez en un nivel se hacen los tres pasos. Las siguientes sesiones van 
 
 **Juegos para la concentración y la motivación (7 años).** Se abren solo después de practicar ese día, como el Mundo Virtual de Smartick, para que sean un premio y no un atajo. El ajuste está en Padres. Al terminar la sesión o la hoja aparece «🎮 ¡Hora del juego!», y cada día se sugiere uno.
 
-| Juego | Qué entrena | Cómo se adapta |
+| Juego | Qué entrena | Niveles y meta por partida |
 |---|---|---|
-| Tabla de Schulte | Atención visual sostenida y búsqueda rápida | 3×3 → 4×4 → 5×5 cuando consigue 3 estrellas por tiempo |
-| Recuerda el número | Memoria de trabajo (secuencia de cifras) | Empieza con 2 cifras, suma 1 por acierto y termina con 2 fallos seguidos |
-| Recuerda el ábaco | Visualizar el ábaco (base del anzan) | Solo números que ya sabe leer: 0–4, 0–5, 0–9, luego 2 y 3 cifras; sube tras 2 aciertos |
-| Luces en orden (Corsi) | Memoria visoespacial | De 2 luces en adelante; dos intentos por longitud |
+| Tabla de Schulte | Atención visual sostenida y búsqueda rápida | 3×3 (≤ 20 s), 4×4 (≤ 40 s), 5×5 (≤ 70 s), con máximo 2 errores |
+| Recuerda el número | Memoria de trabajo (secuencia de cifras) | Cantidad de cifras (empieza en 3); 5 rondas, meta 4 de 5 |
+| Recuerda el ábaco | Visualizar el ábaco (base del anzan) | 1, 2 o 3 cifras, sin pasar de lo que ya sabe leer en la ruta; 8 rondas, meta 7 de 8 |
+| Luces en orden (Corsi) | Memoria visoespacial | Cantidad de luces (empieza en 3); 5 rondas, meta 4 de 5 |
+
+**Avance gradual (pedido después de probarlo):** la primera versión subía de 3×3 a 4×4 tras una sola partida rápida, y eso podía frustrar. Ahora cada juego mantiene su nivel varias partidas:
+- **Registro:** cada partida guarda su tiempo o puntaje.
+- **Sube:** con al menos 4 partidas en ese nivel y las últimas 3 seguidas dentro de la meta, logradas en 2 días distintos. Si las logra el mismo día, Mapi le dice «si mañana también lo logras, subes».
+- **Baja:** un nivel tras 3 partidas seguidas muy difíciles.
+- **Ella ve:** el nivel, la meta, los puntos de avance y sus últimas marcas.
+- **Los padres ven:** el detalle en Padres → Progreso.
 
 Cada juego tiene la explicación de Mapi antes de jugar, estrellas, récords y medallas: «A jugar», «Ojo de águila» (Schulte 4×4), «Memoria de elefante» (5 cifras) y «Camino de luces» (5 luces).
 

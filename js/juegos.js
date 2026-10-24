@@ -6,38 +6,129 @@
  *   Recuerda el ábaco  ver un número en el ábaco y decir cuál era (anzan, visualizar)
  *   Luces en orden     repetir el orden en que se encienden bloques (bloques de Corsi)
  *
- * Cada juego empieza fácil y se adapta: sube de dificultad cuando sale bien.
- * Los motores solo dibujan en `env.board` y avisan con `env.finish(resultado)`.
+ * Cada juego tiene niveles, como la ruta del ábaco. Una partida se juega siempre
+ * en el nivel actual y queda registrada. El nivel solo sube cuando hay dominio:
+ * al menos MIN_PLAYS partidas en ese nivel y las últimas STREAK_UP dentro de la
+ * meta, logradas en al menos MIN_DAYS días distintos (que no sea una racha de
+ * una sola tarde). Si hay HARD_DOWN partidas seguidas muy difíciles, baja un
+ * nivel para no frustrar.
  */
 (function (global) {
   'use strict';
 
+  const MIN_PLAYS = 4;
+  const STREAK_UP = 3;
+  const HARD_DOWN = 3;
+  const MIN_DAYS = 2;
+
+  const SCHULTE_GOAL = { 3: 20, 4: 40, 5: 70 };
+  const lower = (a, b) => a < b;
+  const higher = (a, b) => a > b;
+
   const GAMES = [
     {
       id: 'schulte', icon: '🔢', name: 'Tabla de Schulte', short: 'Encuentra los números en orden, rápido.',
-      intro: st => `Toca los números en orden: 1, 2, 3… lo más rápido que puedas. Mira toda la tabla con calma. Hoy: tabla de ${st.size || 3} por ${st.size || 3}.`,
-      record: st => {
-        const best = st.best || {};
-        const sizes = Object.keys(best).sort();
-        return sizes.length ? sizes.map(n => `${n}×${n}: ${best[n]} s`).join(' · ') : 'Sin récord todavía';
-      }
+      levels: [3, 4, 5], start: 3, better: lower,
+      levelName: l => `la tabla de ${l}×${l}`,
+      levelShort: l => `${l}×${l}`,
+      goal: l => `terminar en ${SCHULTE_GOAL[l]} segundos o menos`,
+      scoreText: s => `${s} s`,
+      intro: () => 'Toca los números en orden: 1, 2, 3… Mira toda la tabla con calma.'
     },
     {
       id: 'span', icon: '🧠', name: 'Recuerda el número', short: 'Mira un número, guárdalo en tu cabeza y escríbelo.',
-      intro: () => 'Te voy a mostrar un número por unos segundos. Míralo bien, repítelo en tu cabeza y, cuando se esconda, escríbelo.',
-      record: st => st.best ? `Récord: ${st.best} cifras` : 'Sin récord todavía'
+      levels: [2, 3, 4, 5, 6, 7, 8], start: 3, rounds: 5, need: 4, better: higher,
+      levelName: l => `números de ${l} cifras`,
+      levelShort: l => `${l} cifras`,
+      goal: () => 'acertar 4 de 5',
+      scoreText: s => `${s} de 5`,
+      intro: () => 'Te voy a mostrar un número por unos segundos. Míralo bien, repítelo en tu cabeza y, cuando se esconda, escríbelo.'
     },
     {
       id: 'flash', icon: '🧮', name: 'Recuerda el ábaco', short: 'Mira el ábaco un momento y di qué número era.',
-      intro: () => 'El ábaco va a aparecer un momento. Fíjate en las bolitas que tocan la barra y, cuando se esconda, escribe el número.',
-      record: st => st.best ? `Récord: ${st.best} de 8` : 'Sin récord todavía'
+      levels: [1, 2, 3], start: 1, rounds: 8, need: 7, better: higher,
+      levelName: l => (l === 1 ? 'números de 1 cifra' : `números de ${l} cifras`),
+      levelShort: l => (l === 1 ? '1 cifra' : `${l} cifras`),
+      goal: () => 'acertar 7 de 8',
+      scoreText: s => `${s} de 8`,
+      intro: () => 'El ábaco va a aparecer un momento. Fíjate en las bolitas que tocan la barra y, cuando se esconda, escribe el número.'
     },
     {
       id: 'corsi', icon: '💡', name: 'Luces en orden', short: 'Mira cómo se encienden las luces y repítelas.',
-      intro: () => 'Algunas luces se van a encender, una por una. Mira bien el orden y después tócalas igual.',
-      record: st => st.best ? `Récord: ${st.best} luces` : 'Sin récord todavía'
+      levels: [2, 3, 4, 5, 6, 7, 8], start: 3, rounds: 5, need: 4, better: higher,
+      levelName: l => `${l} luces`,
+      levelShort: l => `${l} luces`,
+      goal: () => 'acertar 4 de 5',
+      scoreText: s => `${s} de 5`,
+      intro: () => 'Algunas luces se van a encender, una por una. Mira bien el orden y después tócalas igual.'
     }
   ];
+  const BY_ID = Object.fromEntries(GAMES.map(g => [g.id, g]));
+
+  /* ---------- Niveles, registro y dominio ---------- */
+
+  // Estado guardado de un juego. Los datos de la versión anterior (que subía de
+  // nivel de inmediato) se convierten volviendo al nivel inicial.
+  function normalize(id, st) {
+    const def = BY_ID[id];
+    if (st && st.v === 2) return st;
+    const best = {};
+    if (id === 'schulte' && st && st.best) Object.assign(best, st.best);
+    return { v: 2, level: def.start, count: 0, streak: 0, streakDays: [], hard: 0, best, plays: [] };
+  }
+
+  function topLevel(def, maxLevel) {
+    const last = def.levels[def.levels.length - 1];
+    return maxLevel ? Math.min(maxLevel, last) : last;
+  }
+
+  function stepLevel(def, level, dir) {
+    const i = def.levels.indexOf(level);
+    return def.levels[Math.max(0, Math.min(def.levels.length - 1, i + dir))];
+  }
+
+  // Registra una partida y decide si el nivel sube, baja o se mantiene.
+  function applyResult(id, st, result, maxLevel, date) {
+    const def = BY_ID[id];
+    const level = st.level;
+    st.count++;
+    st.streak = result.ok ? st.streak + 1 : 0;
+    st.streakDays = result.ok ? Array.from(new Set((st.streakDays || []).concat(date))) : [];
+    st.hard = result.stars === 1 ? st.hard + 1 : 0;
+    const prev = st.best[level];
+    const record = prev === undefined || def.better(result.score, prev);
+    if (record) st.best[level] = result.score;
+    st.plays = st.plays.concat({ date, level, score: result.score, ok: result.ok, stars: result.stars }).slice(-40);
+
+    let change = 0;
+    const mastered = st.count >= MIN_PLAYS && st.streak >= STREAK_UP && st.streakDays.length >= MIN_DAYS;
+    if (mastered && level < topLevel(def, maxLevel)) change = 1;
+    else if (st.hard >= HARD_DOWN && level > def.levels[0]) change = -1;
+    if (change) {
+      st.level = stepLevel(def, level, change);
+      st.count = 0;
+      st.streak = 0;
+      st.streakDays = [];
+      st.hard = 0;
+    }
+
+    let message;
+    if (change > 0) message = `¡Dominaste este nivel! La próxima vez: ${def.levelName(st.level)}.`;
+    else if (change < 0) message = `Para ganar confianza, la próxima vez jugamos con ${def.levelName(st.level)}.`;
+    else if (result.ok && st.streak >= STREAK_UP && st.streakDays.length < MIN_DAYS) message = 'Hoy ya lo dominas. ¡Si mañana también lo logras, subes de nivel!';
+    else if (result.ok && st.streak >= STREAK_UP && level < topLevel(def, maxLevel)) message = 'Ya lo dominas. Unas partidas más y subes de nivel.';
+    else if (result.ok && st.streak >= STREAK_UP) message = '¡Lo dominas! Sigue así para mejorar tu marca.';
+    else if (result.ok) message = `¡Meta cumplida! Llevas ${st.streak} de ${STREAK_UP} seguidas.`;
+    else message = `La meta es ${def.goal(level)}. ¡Tú puedes!`;
+    return { change, record: record && prev !== undefined, message };
+  }
+
+  // Últimas partidas del nivel actual, para que vea cómo va mejorando.
+  function recent(st, n) {
+    return st.plays.filter(p => p.level === st.level).slice(-(n || 5));
+  }
+
+  /* ---------- Utilidades ---------- */
 
   // Posiciones fijas de los 9 bloques, repartidas como en el tablero de Corsi.
   const CORSI_BLOCKS = [
@@ -66,6 +157,11 @@
     return n;
   }
 
+  // Estrellas de una partida por rondas: meta cumplida = 3 estrellas.
+  function roundStars(def, score) {
+    return score >= def.need ? 3 : score >= Math.ceil(def.rounds * 0.6) ? 2 : 1;
+  }
+
   // Controla el ciclo de vida: al salir del juego, las esperas pendientes se cancelan.
   function lifecycle() {
     let alive = true;
@@ -84,11 +180,8 @@
 
   /* ---------- Tabla de Schulte ---------- */
 
-  const SCHULTE_STARS = { 3: [12, 20], 4: [30, 50], 5: [50, 80] };
-
   function schulte(env, life) {
-    const st = env.state;
-    const size = st.size || 3;
+    const size = env.level;
     const total = size * size;
     const numbers = shuffle(Array.from({ length: total }, (_, i) => i + 1));
     let next = 1;
@@ -116,20 +209,14 @@
         env.sounds.tick();
         next++;
         if (next > total) {
-          const secs = Math.round((Date.now() - start) / 1000);
-          const [three, two] = SCHULTE_STARS[size];
-          let stars = secs <= three ? 3 : secs <= two ? 2 : 1;
-          if (errors > 3) stars = Math.max(1, stars - 1);
-          st.best = st.best || {};
-          const record = !st.best[size] || secs < st.best[size];
-          if (record) st.best[size] = secs;
-          // Si salió muy bien, la próxima vez la tabla es más grande.
-          const grow = stars === 3 && size < 5;
-          if (grow) st.size = size + 1;
+          const secs = Math.max(1, Math.round((Date.now() - start) / 1000));
+          const goal = SCHULTE_GOAL[size];
+          const ok = secs <= goal && errors <= 2;
+          const stars = ok ? 3 : secs <= goal * 1.5 ? 2 : 1;
           env.finish({
-            stars, record, score: secs, detail: `${size}×${size}`,
-            text: `¡Lo lograste en ${secs} ${secs === 1 ? 'segundo' : 'segundos'}${errors ? ` con ${errors} ${errors === 1 ? 'error' : 'errores'}` : ''}!` +
-              (grow ? ` La próxima vez: tabla de ${size + 1} por ${size + 1}.` : '')
+            score: secs, ok, stars,
+            text: `Terminaste en ${secs} ${secs === 1 ? 'segundo' : 'segundos'}` +
+              (errors ? ` con ${errors} ${errors === 1 ? 'error' : 'errores'}.` : ' sin errores.')
           });
           return;
         }
@@ -160,14 +247,11 @@
   /* ---------- Recuerda el número (memoria de cifras) ---------- */
 
   async function span(env, life) {
-    const st = env.state;
-    let len = Math.max(2, (st.best || 2) - 1);
-    let best = 0;
-    let fails = 0;
-    let round = 0;
-    while (life.alive && round < 10) {
-      round++;
-      env.status(`Ronda ${round}`);
+    const def = BY_ID.span;
+    const len = env.level;
+    let score = 0;
+    for (let round = 1; round <= def.rounds && life.alive; round++) {
+      env.status(`${round} de ${def.rounds}`);
       const value = String(randomNumber(len));
       env.board.innerHTML = '';
       const show = el('p', 'memory-number', value.split('').join(' '));
@@ -182,36 +266,27 @@
       const answer = await env.ask(len);
       if (!life.alive) return;
       if (answer === value) {
-        best = Math.max(best, len);
-        fails = 0;
+        score++;
         env.sounds.ok();
         env.say(`¡Sí! Era ${value}.`, 'ok');
-        len++;
       } else {
-        fails++;
         env.sounds.bad();
-        env.say(`Era ${value}. ${fails === 1 ? '¡Otra vez con el mismo tamaño!' : ''}`, 'try');
-        if (fails >= 2) break;
+        env.say(`Era ${value}.`, 'try');
       }
       await life.wait(1400);
     }
     if (!life.alive) return;
-    const record = best > (st.best || 0);
-    if (record) st.best = best;
-    const stars = best >= 5 ? 3 : best >= 4 ? 2 : 1;
-    env.finish({ stars, record, score: best, text: best ? `Recordaste números de ${best} cifras.` : 'Los números largos cuestan. ¡Mañana lo intentamos otra vez!' });
+    env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Acertaste ${score} de ${def.rounds}.` });
   }
 
   /* ---------- Recuerda el ábaco (flash) ---------- */
 
   async function flash(env, life) {
-    const st = env.state;
-    const maxDigits = Math.max(1, env.maxDigits);
-    let digits = Math.min(st.digits || 1, maxDigits);
-    let streak = 0;
-    let correct = 0;
-    for (let round = 1; round <= 8 && life.alive; round++) {
-      env.status(`${round} de 8`);
+    const def = BY_ID.flash;
+    const digits = env.level;
+    let score = 0;
+    for (let round = 1; round <= def.rounds && life.alive; round++) {
+      env.status(`${round} de ${def.rounds}`);
       // Con una cifra, solo números que ya sabe leer en el ábaco (0–4, luego 0–5, luego 0–9).
       const value = digits === 1 ? Math.floor(Math.random() * (env.maxOneDigit + 1)) : randomNumber(digits);
       env.board.innerHTML = '';
@@ -226,13 +301,10 @@
       const answer = await env.ask(String(value).length);
       if (!life.alive) return;
       if (Number(answer) === value) {
-        correct++;
-        streak++;
+        score++;
         env.sounds.ok();
         env.say(`¡Sí! Era el ${value}.`, 'ok');
-        if (streak >= 2 && digits < maxDigits) { digits++; streak = 0; }
       } else {
-        streak = 0;
         env.sounds.bad();
         holder.classList.remove('is-hidden');
         env.say(`Era el ${value}. ¡Mira las bolitas!`, 'try');
@@ -241,17 +313,14 @@
       await life.wait(1200);
     }
     if (!life.alive) return;
-    st.digits = digits;
-    const record = correct > (st.best || 0);
-    if (record) st.best = correct;
-    const stars = correct >= 8 ? 3 : correct >= 6 ? 2 : 1;
-    env.finish({ stars, record, score: correct, text: `Acertaste ${correct} de 8.` });
+    env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Acertaste ${score} de ${def.rounds}.` });
   }
 
   /* ---------- Luces en orden (bloques de Corsi) ---------- */
 
   async function corsi(env, life) {
-    const st = env.state;
+    const def = BY_ID.corsi;
+    const len = env.level;
     env.board.innerHTML = '';
     const board = el('div', 'corsi');
     const blocks = CORSI_BLOCKS.map(([x, y], i) => {
@@ -271,63 +340,53 @@
       blocks[i].classList.remove('is-on');
     };
 
-    let len = 2;
-    let best = 0;
-    while (life.alive && len <= 9) {
-      let passed = false;
-      for (let trial = 0; trial < 2 && !passed && life.alive; trial++) {
-        env.status(`${len} luces`);
-        const seq = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, len);
-        board.classList.add('is-showing');
-        env.say('Mira bien…', null, '');
-        await life.wait(700);
-        for (const i of seq) {
-          if (!life.alive) return;
-          await light(i, 650);
-          await life.wait(250);
-        }
-        board.classList.remove('is-showing');
-        env.say('¡Ahora tú!');
-        const ok = await new Promise(resolve => {
-          let k = 0;
-          const handlers = blocks.map((b, i) => {
-            const h = () => {
-              if (!life.alive) return;
-              light(i, 250);
-              if (i !== seq[k]) { cleanup(); resolve(false); return; }
-              env.sounds.tick();
-              if (++k === seq.length) { cleanup(); resolve(true); }
-            };
-            b.addEventListener('click', h);
-            return h;
-          });
-          function cleanup() { blocks.forEach((b, i) => b.removeEventListener('click', handlers[i])); }
-        });
+    let score = 0;
+    for (let round = 1; round <= def.rounds && life.alive; round++) {
+      env.status(`${round} de ${def.rounds}`);
+      const seq = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, len);
+      board.classList.add('is-showing');
+      env.say('Mira bien…', null, '');
+      await life.wait(700);
+      for (const i of seq) {
         if (!life.alive) return;
-        if (ok) {
-          passed = true;
-          best = len;
-          env.sounds.ok();
-          env.say(`¡Muy bien! ${len} luces.`, 'ok');
-        } else {
-          env.sounds.bad();
-          env.say(trial === 0 ? 'Casi. ¡Otra vez!' : 'Ese orden era difícil.', 'try');
-        }
-        await life.wait(1200);
+        await light(i, 650);
+        await life.wait(250);
       }
-      if (!passed) break;
-      len++;
+      board.classList.remove('is-showing');
+      env.say('¡Ahora tú!');
+      const ok = await new Promise(resolve => {
+        let k = 0;
+        const handlers = blocks.map((b, i) => {
+          const h = () => {
+            if (!life.alive) return;
+            light(i, 250);
+            if (i !== seq[k]) { cleanup(); resolve(false); return; }
+            env.sounds.tick();
+            if (++k === seq.length) { cleanup(); resolve(true); }
+          };
+          b.addEventListener('click', h);
+          return h;
+        });
+        function cleanup() { blocks.forEach((b, i) => b.removeEventListener('click', handlers[i])); }
+      });
+      if (!life.alive) return;
+      if (ok) {
+        score++;
+        env.sounds.ok();
+        env.say('¡Muy bien!', 'ok');
+      } else {
+        env.sounds.bad();
+        env.say('Casi. ¡La siguiente!', 'try');
+      }
+      await life.wait(1200);
     }
     if (!life.alive) return;
-    const record = best > (st.best || 0);
-    if (record) st.best = best;
-    const stars = best >= 5 ? 3 : best >= 4 ? 2 : 1;
-    env.finish({ stars, record, score: best, text: best ? `Repetiste ${best} luces en orden.` : '¡Sigue practicando y verás cómo mejoras!' });
+    env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Acertaste ${score} de ${def.rounds}.` });
   }
 
   const ENGINES = { schulte, span, flash, corsi };
 
-  // Arranca un juego. Devuelve una función para detenerlo.
+  // Arranca un juego en el nivel indicado. Devuelve una función para detenerlo.
   function start(id, env) {
     const life = lifecycle();
     ENGINES[id](env, life);
@@ -339,5 +398,5 @@
     return GAMES[((dayNumber % GAMES.length) + GAMES.length) % GAMES.length];
   }
 
-  global.Juegos = { GAMES, start, gameOfDay };
+  global.Juegos = { GAMES, BY_ID, MIN_PLAYS, STREAK_UP, HARD_DOWN, MIN_DAYS, start, gameOfDay, normalize, applyResult, recent, topLevel };
 })(window);
