@@ -1,6 +1,12 @@
 /*
- * Ábaco – juegos de concentración y memoria para después de practicar.
+ * Ábaco – juegos para después de practicar.
  *
+ * Con el ábaco físico (la app dicta o muestra, cronometra y revisa):
+ *   Pon el número      ver un número y ponerlo rápido en su ábaco
+ *   Escucha y calcula  Mapi dicta una cuenta en cadena y ella la hace en su ábaco
+ *   Mira y calcula     los números aparecen uno por uno y los va sumando en su ábaco
+ *
+ * De concentración y memoria (solo en pantalla):
  *   Tabla de Schulte   encontrar los números en orden (atención y rapidez visual)
  *   Recuerda el número ver un número unos segundos y escribirlo (memoria de trabajo)
  *   Recuerda el ábaco  ver un número en el ábaco y decir cuál era (anzan, visualizar)
@@ -22,12 +28,49 @@
   const MIN_DAYS = 2;
 
   const SCHULTE_GOAL = { 3: 20, 4: 40, 5: 70 };
+  // Segundos para poner los 8 números (solo cuenta el tiempo hasta tocar «¡Listo!»).
+  const PONER_GOAL = { 1: 45, 2: 70, 3: 100 };
+  // Tiempo para mover las bolitas después de cada número de una cuenta en cadena.
+  const CHAIN_PAUSE = 2600;
   const lower = (a, b) => a < b;
   const higher = (a, b) => a > b;
 
+  const GROUPS = [
+    { id: 'abaco', icon: '🧮', name: 'Con tu ábaco', note: 'Ten tu ábaco a la mano: aquí calculas con tus dedos.' },
+    { id: 'mente', icon: '🧠', name: 'Atención y memoria', note: 'Solo con tus ojos y tu cabeza.' }
+  ];
+
+  // from: nivel de la ruta desde el que se abre el juego.
   const GAMES = [
     {
-      id: 'schulte', icon: '🔢', name: 'Tabla de Schulte', short: 'Encuentra los números en orden, rápido.',
+      id: 'poner', group: 'abaco', icon: '✋', name: 'Pon el número', short: 'Mira el número y ponlo rápido en tu ábaco.',
+      levels: [1, 2, 3], start: 1, rounds: 8, need: 7, better: lower,
+      levelName: l => (l === 1 ? 'números de 1 cifra' : `números de ${l} cifras`),
+      levelShort: l => (l === 1 ? '1 cifra' : `${l} cifras`),
+      goal: l => `poner bien 7 de 8 en ${PONER_GOAL[l]} segundos o menos`,
+      scoreText: s => `${s} s`,
+      intro: () => 'Ten tu ábaco en 0. Va a salir un número: límpialo, pon el número en tu ábaco y toca «¡Listo!». Después revisamos si se ve igual.'
+    },
+    {
+      id: 'escucha', group: 'abaco', from: 'B1', icon: '🎧', name: 'Escucha y calcula', short: 'Mapi dicta una cuenta: hazla en tu ábaco.',
+      levels: [2, 3, 4, 5, 6, 7, 8], start: 2, rounds: 5, need: 4, better: higher, chain: true,
+      levelName: l => `cuentas de ${l} números`,
+      levelShort: l => `${l} números`,
+      goal: () => 'acertar 4 de 5',
+      scoreText: s => `${s} de 5`,
+      intro: () => 'Ten tu ábaco en 0. Te voy a dictar una cuenta: «Pon 3… más 4… menos 2». Ve moviendo las bolitas mientras escuchas y al final escribe lo que te dio.'
+    },
+    {
+      id: 'mira', group: 'abaco', from: 'B1', icon: '👀', name: 'Mira y calcula', short: 'Los números salen uno por uno: súmalos en tu ábaco.',
+      levels: [2, 3, 4, 5, 6, 7, 8], start: 2, rounds: 5, need: 4, better: higher, chain: true,
+      levelName: l => `cuentas de ${l} números`,
+      levelShort: l => `${l} números`,
+      goal: () => 'acertar 4 de 5',
+      scoreText: s => `${s} de 5`,
+      intro: () => 'Ten tu ábaco en 0. Los números van a salir uno por uno. Ve haciendo la cuenta en tu ábaco y al final escribe lo que te dio.'
+    },
+    {
+      id: 'schulte', group: 'mente', icon: '🔢', name: 'Tabla de Schulte', short: 'Encuentra los números en orden, rápido.',
       levels: [3, 4, 5], start: 3, better: lower,
       levelName: l => `la tabla de ${l}×${l}`,
       levelShort: l => `${l}×${l}`,
@@ -36,7 +79,7 @@
       intro: () => 'Toca los números en orden: 1, 2, 3… Mira toda la tabla con calma.'
     },
     {
-      id: 'span', icon: '🧠', name: 'Recuerda el número', short: 'Mira un número, guárdalo en tu cabeza y escríbelo.',
+      id: 'span', group: 'mente', icon: '🧠', name: 'Recuerda el número', short: 'Mira un número, guárdalo en tu cabeza y escríbelo.',
       levels: [2, 3, 4, 5, 6, 7, 8], start: 3, rounds: 5, need: 4, better: higher,
       levelName: l => `números de ${l} cifras`,
       levelShort: l => `${l} cifras`,
@@ -45,7 +88,7 @@
       intro: () => 'Te voy a mostrar un número por unos segundos. Míralo bien, repítelo en tu cabeza y, cuando se esconda, escríbelo.'
     },
     {
-      id: 'flash', icon: '🧮', name: 'Recuerda el ábaco', short: 'Mira el ábaco un momento y di qué número era.',
+      id: 'flash', group: 'mente', icon: '🧮', name: 'Recuerda el ábaco', short: 'Mira el ábaco un momento y di qué número era.',
       levels: [1, 2, 3], start: 1, rounds: 8, need: 7, better: higher,
       levelName: l => (l === 1 ? 'números de 1 cifra' : `números de ${l} cifras`),
       levelShort: l => (l === 1 ? '1 cifra' : `${l} cifras`),
@@ -54,7 +97,7 @@
       intro: () => 'El ábaco va a aparecer un momento. Fíjate en las bolitas que tocan la barra y, cuando se esconda, escribe el número.'
     },
     {
-      id: 'corsi', icon: '💡', name: 'Luces en orden', short: 'Mira cómo se encienden las luces y repítelas.',
+      id: 'corsi', group: 'mente', icon: '💡', name: 'Luces en orden', short: 'Mira cómo se encienden las luces y repítelas.',
       levels: [2, 3, 4, 5, 6, 7, 8], start: 3, rounds: 5, need: 4, better: higher,
       levelName: l => `${l} luces`,
       levelShort: l => `${l} luces`,
@@ -96,7 +139,8 @@
     st.streakDays = result.ok ? Array.from(new Set((st.streakDays || []).concat(date))) : [];
     st.hard = result.stars === 1 ? st.hard + 1 : 0;
     const prev = st.best[level];
-    const record = prev === undefined || def.better(result.score, prev);
+    // Un tiempo rápido con muchos errores no cuenta como marca.
+    const record = !result.noRecord && (prev === undefined || def.better(result.score, prev));
     if (record) st.best[level] = result.score;
     st.plays = st.plays.concat({ date, level, score: result.score, ok: result.ok, stars: result.stars }).slice(-40);
 
@@ -287,8 +331,8 @@
     let score = 0;
     for (let round = 1; round <= def.rounds && life.alive; round++) {
       env.status(`${round} de ${def.rounds}`);
-      // Con una cifra, solo números que ya sabe leer en el ábaco (0–4, luego 0–5, luego 0–9).
-      const value = digits === 1 ? Math.floor(Math.random() * (env.maxOneDigit + 1)) : randomNumber(digits);
+      // Solo números que ya sabe leer en el ábaco (0–4, luego 0–5, luego 0–9; decenas…).
+      const value = env.number(digits);
       env.board.innerHTML = '';
       const holder = el('div', 'exercise-abacus game-abacus');
       env.board.appendChild(holder);
@@ -384,7 +428,165 @@
     env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Acertaste ${score} de ${def.rounds}.` });
   }
 
-  const ENGINES = { schulte, span, flash, corsi };
+  /* ---------- Pon el número (ábaco físico) ---------- */
+
+  // Espera a que toque uno de los botones; devuelve el índice del botón.
+  function tap(buttons) {
+    return new Promise(resolve => buttons.forEach((b, i) => b.addEventListener('click', () => resolve(i), { once: true })));
+  }
+
+  function button(cls, text) {
+    const b = el('button', 'btn ' + cls, text);
+    b.type = 'button';
+    return b;
+  }
+
+  async function poner(env, life) {
+    const def = BY_ID.poner;
+    const digits = env.level;
+    let correct = 0;
+    let ms = 0;
+    let prev = null;
+    for (let round = 1; round <= def.rounds && life.alive; round++) {
+      // Sin el 0 (sería solo limpiar) y sin repetir el anterior.
+      let value = env.number(digits);
+      for (let k = 0; k < 20 && (value === 0 || value === prev); k++) value = env.number(digits);
+      prev = value;
+      env.board.innerHTML = '';
+      env.board.appendChild(el('p', 'game-target', 'Pon en tu ábaco:'));
+      env.board.appendChild(el('p', 'memory-number', String(value)));
+      const ready = button('btn-primary btn-xl', '✋ ¡Listo!');
+      env.board.appendChild(ready);
+      env.say(`Pon el ${value}.`);
+      const start = Date.now();
+      let waiting = true;
+      const tick = () => {
+        if (!life.alive || !waiting) return;
+        env.status(`${round} de ${def.rounds} · ${Math.round((ms + Date.now() - start) / 1000)} s`);
+        life.wait(500).then(tick);
+      };
+      tick();
+      await tap([ready]);
+      waiting = false;
+      if (!life.alive) return;
+      ms += Date.now() - start;
+      env.status(`${round} de ${def.rounds} · ${Math.round(ms / 1000)} s`);
+
+      // Revisión: el ábaco de la pantalla al lado del suyo.
+      env.board.innerHTML = '';
+      env.board.appendChild(el('p', 'game-target', '¿Tu ábaco se ve así?'));
+      const holder = el('div', 'exercise-abacus game-abacus');
+      env.board.appendChild(holder);
+      new env.Soroban(holder, { rods: Math.max(3, digits + 1), value, interactive: false, animate: false, showLabels: false });
+      const row = el('div', 'row center');
+      const same = button('btn-primary btn-xl', '✓ ¡Igual!');
+      const diff = button('btn-soft', '✗ No');
+      row.appendChild(same);
+      row.appendChild(diff);
+      env.board.appendChild(row);
+      env.say(`¿Tu ábaco se ve así? Es el ${value}.`, null, '¿Tu ábaco se ve así?');
+      const answer = await tap([same, diff]);
+      if (!life.alive) return;
+      if (answer === 0) {
+        correct++;
+        env.sounds.ok();
+        env.say('¡Muy bien!', 'ok');
+        await life.wait(700);
+      } else {
+        env.sounds.bad();
+        env.say(`Arréglalo en tu ábaco: mira las bolitas del ${value}.`, 'try');
+        await life.wait(2600);
+      }
+    }
+    if (!life.alive) return;
+    const secs = Math.max(1, Math.round(ms / 1000));
+    const goal = PONER_GOAL[digits];
+    const ok = correct >= def.need && secs <= goal;
+    const stars = ok ? 3 : correct >= def.need - 1 && secs <= goal * 1.5 ? 2 : 1;
+    env.finish({
+      score: secs, ok, stars, noRecord: correct < def.need,
+      text: `Pusiste ${correct} de ${def.rounds} bien en ${secs} ${secs === 1 ? 'segundo' : 'segundos'}.`
+    });
+  }
+
+  /* ---------- Escucha y calcula / Mira y calcula (ábaco físico) ---------- */
+
+  // «3 + 4 − 2» para la pantalla y «Pon 3. Más 4. Menos 2.» para la voz.
+  function chainText(terms) {
+    return terms.map((t, i) => (i === 0 ? String(t) : (t < 0 ? ' − ' : ' + ') + Math.abs(t))).join('');
+  }
+
+  function termShown(t, i) {
+    return i === 0 ? String(t) : (t < 0 ? '− ' : '+ ') + Math.abs(t);
+  }
+
+  function termSpoken(t, i) {
+    return i === 0 ? `Pon ${t}.` : (t < 0 ? 'Menos ' : 'Más ') + Math.abs(t) + '.';
+  }
+
+  async function chainGame(env, life, def) {
+    const count = env.level;
+    // Sin voz en español, «Escucha y calcula» muestra los números como «Mira y calcula».
+    const listen = def.id === 'escucha' && env.canSpeak;
+    let score = 0;
+    for (let round = 1; round <= def.rounds && life.alive; round++) {
+      env.status(`${round} de ${def.rounds}`);
+      const terms = env.chain(count);
+      const total = terms.reduce((s, t) => s + t, 0);
+      env.board.innerHTML = '';
+      const hero = el('p', 'game-hero chain-hero', listen ? '🎧' : '👀');
+      env.board.appendChild(hero);
+      const shown = el('p', 'chain-term', '');
+      env.board.appendChild(shown);
+      const dots = el('div', 'chain-dots');
+      terms.forEach(() => dots.appendChild(el('span', 'dot')));
+      env.board.appendChild(dots);
+      env.say('Limpia tu ábaco… ¡Atención!', null, '');
+      if (listen) await env.speak(round === 1 ? 'Limpia tu ábaco. ¡Atención!' : 'Limpia tu ábaco. ¡La siguiente!');
+      await life.wait(1600);
+      for (let k = 0; k < terms.length; k++) {
+        if (!life.alive) return;
+        dots.children[k].classList.add('is-on');
+        if (listen) {
+          await env.speak(termSpoken(terms[k], k));
+          if (!life.alive) return;
+          await life.wait(CHAIN_PAUSE);
+        } else {
+          shown.textContent = termShown(terms[k], k);
+          env.sounds.tick();
+          await life.wait(CHAIN_PAUSE);
+          shown.textContent = '';
+          await life.wait(400);
+        }
+      }
+      if (!life.alive) return;
+      shown.textContent = '= ?';
+      hero.hidden = true;
+      env.say('¿Cuánto te dio?');
+      const answer = await env.ask(env.answerLength);
+      if (!life.alive) return;
+      shown.textContent = `${chainText(terms)} = ${total}`;
+      shown.classList.add('is-small');
+      if (Number(answer) === total) {
+        score++;
+        env.sounds.ok();
+        env.say(`¡Sí! Te dio ${total}.`, 'ok');
+        await life.wait(1600);
+      } else {
+        env.sounds.bad();
+        env.say(`Era ${total}. Mira la cuenta: ${chainText(terms)}.`, 'try');
+        await life.wait(3600);
+      }
+      shown.classList.remove('is-small');
+    }
+    if (!life.alive) return;
+    env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Acertaste ${score} de ${def.rounds}.` });
+  }
+
+  const escucha = (env, life) => chainGame(env, life, BY_ID.escucha);
+  const mira = (env, life) => chainGame(env, life, BY_ID.mira);
+
+  const ENGINES = { poner, escucha, mira, schulte, span, flash, corsi };
 
   // Arranca un juego en el nivel indicado. Devuelve una función para detenerlo.
   function start(id, env) {
@@ -393,10 +595,11 @@
     return () => life.stop();
   }
 
-  // Juego sugerido del día: cambia cada día.
-  function gameOfDay(dayNumber) {
-    return GAMES[((dayNumber % GAMES.length) + GAMES.length) % GAMES.length];
+  // Juego sugerido del día: cambia cada día, entre los que ya están abiertos.
+  function gameOfDay(dayNumber, list) {
+    const games = list && list.length ? list : GAMES;
+    return games[((dayNumber % games.length) + games.length) % games.length];
   }
 
-  global.Juegos = { GAMES, BY_ID, MIN_PLAYS, STREAK_UP, HARD_DOWN, MIN_DAYS, start, gameOfDay, normalize, applyResult, recent, topLevel };
+  global.Juegos = { GAMES, GROUPS, BY_ID, MIN_PLAYS, STREAK_UP, HARD_DOWN, MIN_DAYS, PONER_GOAL, start, gameOfDay, normalize, applyResult, recent, topLevel };
 })(window);

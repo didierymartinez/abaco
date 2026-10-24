@@ -16,7 +16,16 @@ La app tiene cinco secciones en la barra inferior:
   - Debajo está el mapa de la ruta: niveles superados con ✓ y estrellas, el nivel actual resaltado y los siguientes bloqueados.
   - También muestra la racha de la semana. Cuando ya vio la lección, puede hacer la práctica en papel con cronómetro y corrección.
   - **✏️ Dictado de números:** Mapi dice 12 números y ella los escribe con lápiz en la hoja de dictado, cada uno en su casilla. Al final compara con la lista y marca los que estén mal. Los números siguen la ruta: del 0 al 9 mientras aprende las unidades, hasta el 99 desde las decenas y hasta el 999 desde las centenas. El dictado también cuenta para la racha y abre los juegos.
-- 🎮 **Juegos:** cuatro juegos de concentración y memoria que se abren como premio después de practicar ese día (en pantalla, con la hoja o con el dictado):
+- 🎮 **Juegos:** se abren como premio después de practicar ese día (en pantalla, con la hoja o con el dictado). Hay dos grupos.
+
+  **🧮 Con tu ábaco** (se juegan con el ábaco físico; la app dicta o muestra, cronometra y revisa):
+  - **Pon el número:** sale un número y ella lo pone rápido en su ábaco. Toca «¡Listo!» y compara su ábaco con el de la pantalla. Nivel = cantidad de cifras; meta: 7 de 8 bien dentro de un tiempo.
+  - **Escucha y calcula:** Mapi dicta una cuenta en cadena («Pon 3… más 4… menos 2») y ella la hace en su ábaco mientras escucha. Al final escribe el resultado. Nivel = cantidad de números; meta: 4 de 5.
+  - **Mira y calcula:** igual, pero los números aparecen en la pantalla uno por uno.
+
+  Las cuentas solo usan los movimientos que ya aprendió en la ruta: sumas directas, luego amigos del 5, luego amigos del 10. Por eso se abren en el nivel B1, y antes de B3 tienen como máximo 3 números. «Pon el número» tampoco pasa de las cifras que ya sabe poner.
+
+  **🧠 Atención y memoria** (solo en pantalla):
   - **Tabla de Schulte:** tocar los números en orden. Niveles 3×3, 4×4 y 5×5, con una meta de tiempo.
   - **Recuerda el número:** ver un número unos segundos y escribirlo. Nivel = cantidad de cifras; meta: 4 de 5.
   - **Recuerda el ábaco:** ver el ábaco un momento y decir qué número era. Solo usa números que ya sabe leer; meta: 7 de 8.
@@ -71,6 +80,6 @@ Con internet, la app siempre pide la versión actual. Al detectar una versión n
 | `js/curriculum.js` | 25 niveles en 8 módulos con sus lecciones, generadores de ejercicios con semilla y pasos para enseñar, guiar y explicar |
 | `js/soroban.js` | Soroban en SVG: tocar o deslizar las cuentas, flechas del teclado |
 | `js/caligrafia.js` | Trazos de los números 0–9 con su orden, para las hojas de caligrafía |
-| `js/juegos.js` | Los cuatro juegos de concentración (Schulte, memoria de cifras, flash del ábaco y Corsi), adaptativos |
+| `js/juegos.js` | Los juegos con el ábaco físico (pon el número, escucha y calcula, mira y calcula) y los de concentración (Schulte, memoria de cifras, flash del ábaco y Corsi), con niveles que suben con dominio |
 | `js/app.js` | Lógica de la app: mapa de progreso, sesión con ayuda «?», estrellas y medallas, Mapi y su voz, práctica en papel, dictado, impresión y padres |
 | `manifest.webmanifest`, `sw.js`, `icons/` | App instalable y sin conexión |

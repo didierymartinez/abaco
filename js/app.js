@@ -1679,6 +1679,28 @@
     return 'speechSynthesis' in window && spanishVoices().length > 0;
   }
 
+  // Para «Escucha y calcula»: habla siempre y avisa al terminar la frase, así la
+  // pausa para mover las bolitas empieza después. Si el navegador no avisa, sigue
+  // tras un tiempo prudente.
+  function speakAndWait(text) {
+    return new Promise(resolve => {
+      const timer = setTimeout(resolve, 700 + 70 * text.length);
+      const done = () => { clearTimeout(timer); resolve(); };
+      if (!hasSpanishVoice()) return;
+      try {
+        window.speechSynthesis.cancel();
+        if (!voice) pickVoice();
+        const u = new SpeechSynthesisUtterance(speakable(text));
+        u.lang = voice ? voice.lang : 'es-MX';
+        if (voice) u.voice = voice;
+        u.rate = data.settings.voiceRate || 0.95;
+        u.onend = done;
+        u.onerror = done;
+        window.speechSynthesis.speak(u);
+      } catch (e) { done(); }
+    });
+  }
+
   function setDictationStage(stage) {
     $('dict-intro').hidden = stage !== 'intro';
     $('dict-run').hidden = stage !== 'run';
@@ -1876,36 +1898,49 @@
     return 3;
   }
 
+  // Un número para leer o poner en el ábaco, sin pasar de lo que ya sabe:
+  // 0–4, luego 0–5, luego 0–9; con dos cifras, primero solo decenas (10, 20…).
+  function routeNumber(digits) {
+    const i = C.levelIndex(data.levelId);
+    if (digits <= 1) {
+      const max = i < C.levelIndex('A3') ? 4 : i < C.levelIndex('A4') ? 5 : 9;
+      return Math.floor(Math.random() * (max + 1));
+    }
+    if (digits === 2 && i < C.levelIndex('A7')) return 10 * (1 + Math.floor(Math.random() * 9));
+    return 10 ** (digits - 1) + Math.floor(Math.random() * 9 * 10 ** (digits - 1));
+  }
+
+  // Nivel más alto que permite la ruta en cada juego (0 = sin límite).
+  function gameLimit(g) {
+    if (g.id === 'flash' || g.id === 'poner') return flashMaxDigits();
+    if (g.chain) return C.levelIndex(data.levelId) < C.levelIndex('B3') ? 3 : 0;
+    return 0;
+  }
+
+  // Los juegos con cuentas se abren cuando ya sabe sumar en la ruta.
+  function gameOpen(g) {
+    return !g.from || C.levelIndex(data.levelId) >= C.levelIndex(g.from);
+  }
+
+  function gameOfToday() {
+    return J.gameOfDay(dayNumber(today()), J.GAMES.filter(gameOpen));
+  }
+
   function renderGames() {
     const unlocked = gamesUnlocked();
-    const today_ = J.gameOfDay(dayNumber(today()));
+    const today_ = gameOfToday();
     $('games-bubble').textContent = unlocked
-      ? `¡Elige un juego! El de hoy es «${today_.name}». Entrenan tu atención y tu memoria.`
+      ? `¡Elige un juego! El de hoy es «${today_.name}». Unos son con tu ábaco y otros entrenan tu atención y tu memoria.`
       : 'Los juegos se abren cuando terminas tu práctica de hoy. ¡Vamos a practicar primero!';
     const box = $('games-list');
     box.innerHTML = '';
-    J.GAMES.forEach(g => {
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'game-card' + (g.id === today_.id ? ' is-today' : '') + (unlocked ? '' : ' is-locked');
-      card.appendChild(textSpan(g.icon, 'game-icon'));
-      const info = document.createElement('span');
-      info.className = 'game-info';
-      info.appendChild(textSpan(g.name, 'game-name'));
-      info.appendChild(textSpan(g.short, 'game-short'));
-      const st = data.games[g.id];
-      info.appendChild(textSpan(`Nivel: ${g.levelShort(st.level)}`, 'game-record'));
-      info.appendChild(masteryDots(st));
-      card.appendChild(info);
-      if (g.id === today_.id) card.appendChild(textSpan('Hoy', 'game-badge'));
-      card.addEventListener('click', () => {
-        if (!gamesUnlocked()) {
-          mapi('games-bubble', 'Primero tu práctica de hoy y después, ¡a jugar!', 'try');
-          return;
-        }
-        openGame(g);
-      });
-      box.appendChild(card);
+    J.GROUPS.forEach(group => {
+      const head = document.createElement('div');
+      head.className = 'games-group';
+      head.appendChild(textSpan(`${group.icon} ${group.name}`, 'games-group-name'));
+      head.appendChild(textSpan(group.note, 'games-group-note'));
+      box.appendChild(head);
+      J.GAMES.filter(g => g.group === group.id).forEach(g => box.appendChild(gameCard(g, unlocked, today_)));
     });
     if (!unlocked) {
       const go = document.createElement('button');
@@ -1915,6 +1950,39 @@
       go.addEventListener('click', () => show('home'));
       box.appendChild(go);
     }
+  }
+
+  function gameCard(g, unlocked, today_) {
+    const open = gameOpen(g);
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'game-card' + (g.id === today_.id ? ' is-today' : '') + (unlocked && open ? '' : ' is-locked');
+    card.appendChild(textSpan(g.icon, 'game-icon'));
+    const info = document.createElement('span');
+    info.className = 'game-info';
+    info.appendChild(textSpan(g.name, 'game-name'));
+    info.appendChild(textSpan(g.short, 'game-short'));
+    const st = data.games[g.id];
+    if (open) {
+      info.appendChild(textSpan(`Nivel: ${g.levelShort(st.level)}`, 'game-record'));
+      info.appendChild(masteryDots(st));
+    } else {
+      info.appendChild(textSpan(`🔒 Se abre en el nivel ${g.from}: ${C.getLevel(g.from).name}`, 'game-record'));
+    }
+    card.appendChild(info);
+    if (g.id === today_.id) card.appendChild(textSpan('Hoy', 'game-badge'));
+    card.addEventListener('click', () => {
+      if (!open) {
+        mapi('games-bubble', `«${g.name}» se abre cuando llegues a «${C.getLevel(g.from).name}». ¡Sigue tu camino!`, 'try');
+        return;
+      }
+      if (!gamesUnlocked()) {
+        mapi('games-bubble', 'Primero tu práctica de hoy y después, ¡a jugar!', 'try');
+        return;
+      }
+      openGame(g);
+    });
+    return card;
   }
 
   // Pantalla de inicio de cada juego: Mapi explica antes de jugar.
@@ -1969,12 +2037,18 @@
     stopGame();
     $('game-keypad').hidden = true;
     const st = data.games[g.id];
-    // «Recuerda el ábaco» no pasa de las cifras que ya sabe leer en la ruta.
-    if (g.id === 'flash') st.level = Math.min(st.level, flashMaxDigits());
+    // Los juegos con el ábaco no pasan de lo que ya sabe en la ruta.
+    const limit = gameLimit(g);
+    if (limit) st.level = Math.min(st.level, limit);
+    const skills = C.abacusSkills(data.levelId);
     stopCurrentGame = J.start(g.id, {
       board: $('game-board'),
       level: st.level,
-      maxOneDigit: C.levelIndex(data.levelId) < C.levelIndex('A3') ? 4 : C.levelIndex(data.levelId) < C.levelIndex('A4') ? 5 : 9,
+      number: routeNumber,
+      chain: count => C.skillChain(data.levelId, count) || C.skillChain(data.levelId, 2) || [1, 1],
+      answerLength: skills ? String(skills.max).length : 1,
+      canSpeak: hasSpanishVoice(),
+      speak: speakAndWait,
       Soroban: window.Soroban,
       sounds: { ok: soundOk, bad: soundTry, tick: soundTick },
       say: (text, mood, speech) => mapi('game-bubble', text, mood, speech),
@@ -2039,7 +2113,7 @@
     const before = new Set(wonBadges().map(b => b.id));
     const st = data.games[g.id];
     const playedLevel = st.level;
-    const outcome = J.applyResult(g.id, st, result, g.id === 'flash' ? flashMaxDigits() : 0, today());
+    const outcome = J.applyResult(g.id, st, result, gameLimit(g), today());
     data.games.log = (data.games.log || []).concat({ date: today(), game: g.id, level: playedLevel, score: result.score, stars: result.stars }).slice(-200);
     data.stars = (data.stars || 0) + result.stars;
     save();
@@ -2112,7 +2186,10 @@
       { id: 'estrellas50', icon: '🌟', name: '50 estrellas', desc: 'Juntar 50 estrellas', won: d => (d.stars || 0) >= 50 },
       { id: 'dictado1', icon: '👂', name: 'Buen oído', desc: 'Terminar un dictado de números', won: d => (d.dictations || []).length >= 1 },
       { id: 'dictado10', icon: '✍️', name: 'Mano firme', desc: 'Terminar 10 dictados', won: d => (d.dictations || []).length >= 10 },
-      { id: 'juego1', icon: '🎮', name: 'A jugar', desc: 'Terminar un juego de concentración', won: d => (d.games.log || []).length >= 1 },
+      { id: 'juego1', icon: '🎮', name: 'A jugar', desc: 'Terminar un juego', won: d => (d.games.log || []).length >= 1 },
+      { id: 'poner', icon: '✋', name: 'Dedos rápidos', desc: 'Cumplir la meta de «Pon el número»', won: d => Object.entries(d.games.poner.best).some(([l, s]) => s <= J.PONER_GOAL[l]) },
+      { id: 'escucha4', icon: '🎧', name: 'Oído de soroban', desc: 'Acertar una cuenta dictada de 4 números', won: d => (d.games.escucha.best[4] || 0) >= 1 },
+      { id: 'mira4', icon: '👀', name: 'Vista de soroban', desc: 'Acertar una cuenta de 4 números en «Mira y calcula»', won: d => (d.games.mira.best[4] || 0) >= 1 },
       { id: 'schulte4', icon: '🦅', name: 'Ojo de águila', desc: 'Terminar la tabla de Schulte de 4×4', won: d => d.games.schulte.best[4] !== undefined },
       { id: 'memoria5', icon: '🐘', name: 'Memoria de elefante', desc: 'Recordar un número de 5 cifras', won: d => (d.games.span.best[5] || 0) >= 1 },
       { id: 'corsi5', icon: '💡', name: 'Camino de luces', desc: 'Repetir 5 luces en orden', won: d => (d.games.corsi.best[5] || 0) >= 1 }
@@ -2190,6 +2267,7 @@
       ? `Dictados: ${(data.dictations || []).length} en total · últimos: ${dl.map(d => `${d.correct}/${d.total}`).join(', ')} · hoy toca ${dictationRangeText(dictationDigits())}.`
       : `Dictados: todavía ninguno · toca ${dictationRangeText(dictationDigits())}.`;
     $('games-progress').textContent = 'Juegos · ' + J.GAMES.map(g => {
+      if (!gameOpen(g)) return `${g.name}: se abre en ${g.from}`;
       const st = data.games[g.id];
       const last = J.recent(st, 3).map(p => g.scoreText(p.score)).join(', ');
       return `${g.name}: ${g.levelShort(st.level)}, ${st.count} ${st.count === 1 ? 'partida' : 'partidas'} en este nivel, ${Math.min(st.streak, J.STREAK_UP)} de ${J.STREAK_UP} seguidas en la meta` + (last ? ` (últimas: ${last})` : '');

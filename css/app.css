@@ -275,6 +275,17 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focu
 .recent-chip { background: #f4f7fc; border-radius: 999px; padding: 3px 10px; font-weight: 800; font-size: .85rem; color: var(--muted); }
 .recent-chip.is-ok { background: var(--success-soft); color: var(--success-dark); }
 .game-card .mastery { margin: 2px 0 0; }
+.games-group { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 8px 4px -4px; }
+.games-group-name { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.3rem; }
+.games-group-note { color: var(--muted); font-weight: 600; font-size: .9rem; }
+
+/* Escucha y calcula / Mira y calcula */
+.chain-hero { font-size: clamp(2.6rem, 8vh, 4rem); margin: 0; }
+.chain-term { font-family: 'Baloo 2', sans-serif; font-size: clamp(3.2rem, 13vh, 6rem); font-weight: 800; color: var(--primary); line-height: 1.1; min-height: 1.1em; margin: 0 0 8px; }
+.chain-term.is-small { font-size: clamp(1.5rem, 5vh, 2.2rem); color: var(--primary-dark); }
+.chain-dots { display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
+.chain-dots .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--line); }
+.chain-dots .dot.is-on { background: var(--accent); box-shadow: 0 2px 0 var(--accent-dark); }
 
 /* Tabla de Schulte */
 .schulte { display: grid; gap: 8px; width: 100%; max-width: min(420px, 52vh); aspect-ratio: 1; }

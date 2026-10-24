@@ -753,9 +753,52 @@
     return { steps, rods: Math.max(3, String(max).length + 1) };
   }
 
+  /* ---------- Juegos con el ábaco físico ---------- */
+
+  // Qué sumas y restas sabe hacer según su nivel en la ruta (null si aún no suma).
+  function abacusSkills(levelId) {
+    const i = levelIndex(levelId);
+    const at = id => i >= levelIndex(id);
+    if (!at('B1')) return null;
+    return {
+      add: at('D1') ? 'libre' : at('C1') ? 'sinLlevada' : 'directo',
+      sub: at('D2') ? 'libre' : at('C2') ? 'sinLlevada' : at('B3') ? 'directo' : null,
+      termMax: at('B2') ? 9 : 4,
+      max: at('E1') ? 99 : at('D1') ? 18 : 9
+    };
+  }
+
+  // Cuenta en cadena de números de una cifra, solo con movimientos que ya conoce.
+  // Sin restar justo lo que acaba de sumar (+3 −3). Devuelve null si no hay cuenta posible.
+  function skillChain(levelId, count, rng) {
+    const skills = abacusSkills(levelId);
+    if (!skills) return null;
+    const r = rng || { next: Math.random, int: (a, b) => a + Math.floor(Math.random() * (b - a + 1)) };
+    for (let attempt = 0; attempt < 400; attempt++) {
+      const terms = [r.int(1, 9)];
+      let total = terms[0];
+      while (terms.length < count) {
+        const options = [];
+        for (let n = 1; n <= skills.termMax; n++) {
+          for (const t of skills.sub ? [n, -n] : [n]) {
+            const next = total + t;
+            if (next < 0 || next > skills.max || t === -terms[terms.length - 1]) continue;
+            if (RULES[t > 0 ? skills.add : skills.sub](columnKinds(total, t))) options.push(t);
+          }
+        }
+        if (!options.length) break;
+        const t = options[Math.floor(r.next() * options.length)];
+        terms.push(t);
+        total += t;
+      }
+      if (terms.length === count) return terms;
+    }
+    return null;
+  }
+
   global.Curriculum = {
     LEVELS, MODULES, moduleOf, getLevel, levelIndex, nextLevel, previousLevel,
     buildSheet, explain, explainSet, explainRead, guidedSteps, lessonSteps, exprText, sayCount, rodsFor, makeRng,
-    addKind, subKind, columnKinds
+    addKind, subKind, columnKinds, abacusSkills, skillChain
   };
 })(typeof window !== 'undefined' ? window : globalThis);

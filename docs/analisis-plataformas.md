@@ -190,7 +190,30 @@ En Kumon y en la escuela, el dictado une tres cosas: escuchar el número, recono
 - **Motivación:** el dictado cuenta para la racha del día y abre los juegos. Hay dos medallas: «Buen oído» (el primer dictado) y «Mano firme» (10 dictados). En Padres → Progreso se ve el total y los últimos resultados.
 - **Sin voz:** si el dispositivo no tiene voz en español, un adulto puede dictar tocando «👁 Ver número».
 
-## 10. Ideas para siguientes versiones
+## 10. Juegos con el ábaco físico
+
+Lo que más le funcionó fue alternar entre el ábaco real y el celular. Por eso hay un grupo de juegos que se juegan con el ábaco en la mano: el celular dicta o muestra, cronometra y revisa. Toman la idea del cálculo «escuchado» (*yomiage-zan*) y del cálculo «mirado» (*mitori-zan*) de las escuelas de soroban, y la de rapidez para formar números.
+
+| Juego | Qué entrena | Niveles y meta |
+|---|---|---|
+| Pon el número | Formar números rápido y sin mirar dos veces | 1, 2 o 3 cifras (sin pasar de las que sabe poner en la ruta). 8 números; meta: 7 bien en 45 s, 70 s o 100 s |
+| Escucha y calcula | Escuchar con atención y mover las bolitas al ritmo del dictado | De 2 a 8 números en la cuenta. 5 cuentas; meta: 4 de 5 |
+| Mira y calcula | Leer un número, retenerlo y hacerlo en el ábaco | Igual que el anterior, pero los números aparecen en la pantalla |
+
+- **Pon el número:** el tiempo solo corre desde que aparece el número hasta que toca «¡Listo!». La revisión se hace comparando su ábaco con el de la pantalla («¿Tu ábaco se ve así?»). Un tiempo rápido con errores no cuenta como marca.
+- **Las cuentas siguen la ruta:** solo usan movimientos que ya aprendió:
+  - sumas directas en B1 y B2, y restas directas desde B3;
+  - amigos del 5 desde C1 y C2;
+  - amigos del 10 desde D1 y D2;
+  - resultados hasta 9, luego hasta 18, y hasta 99 desde las dos cifras (E1).
+
+  No hay pares como «+3 −3». Antes de B3 solo se puede sumar, así que las cuentas tienen como máximo 3 números.
+- **Ritmo:** después de cada número hay una pausa de unos 2,6 s para mover las bolitas. Al final escribe el resultado; si se equivoca, ve la cuenta completa («9 − 8 = 1»).
+- **Sin voz en español:** «Escucha y calcula» muestra los números en la pantalla.
+- **Niveles:** el avance es el mismo de los otros juegos: sube solo con dominio en dos días distintos y baja si hay tres partidas muy difíciles.
+- **En la app:** los juegos se ven agrupados en «Con tu ábaco» y «Atención y memoria». Los que aún no se abren muestran desde qué nivel de la ruta se juegan. Hay tres medallas nuevas: «Dedos rápidos», «Oído de soroban» y «Vista de soroban».
+
+## 11. Ideas para siguientes versiones
 
 - **Evaluación inicial** al estilo Smartick o la «recomendación» de Supercerebros, para elegir el nivel de inicio automáticamente.
 - **Adaptación dentro de la sesión**: si falla dos seguidos, intercalar un ejercicio del nivel anterior.
