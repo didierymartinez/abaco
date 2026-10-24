@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Mi Ábaco">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap">
-  <link rel="stylesheet" href="css/app.css?v=7">
+  <link rel="stylesheet" href="css/app.css?v=8">
 </head>
 <body>
   <!-- Mapi, la mascota: un mapache dibujado en SVG que se reutiliza en toda la app -->
@@ -96,6 +96,47 @@
       <div id="route-modules" class="map"></div>
     </section>
 
+    <!-- Juegos de concentración -->
+    <section class="view" id="view-games" hidden>
+      <div class="view-head"><h1>Juegos</h1></div>
+      <div class="card">
+        <div class="guide">
+          <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#mapi"/></svg>
+          <p class="bubble" id="games-bubble"></p>
+        </div>
+      </div>
+      <div class="games" id="games-list"></div>
+    </section>
+
+    <!-- Un juego -->
+    <section class="view session" id="view-game" hidden>
+      <div class="session-bar">
+        <button class="icon-btn" id="game-exit" type="button" aria-label="Salir del juego">✕</button>
+        <h2 class="game-title" id="game-title"></h2>
+        <span class="chip-stat" id="game-status"></span>
+        <button class="icon-btn" id="game-voice" type="button" aria-label="Voz">🔊</button>
+      </div>
+      <div class="session-main">
+        <div class="stage">
+          <div class="guide">
+            <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#mapi"/></svg>
+            <p class="bubble" id="game-bubble" role="status" aria-live="polite"></p>
+          </div>
+          <div class="stage-body" id="game-board"></div>
+        </div>
+        <div class="side">
+          <div class="keypad" id="game-keypad" hidden>
+            <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+            <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+            <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+            <button type="button" data-key="Backspace" class="key-soft" aria-label="Borrar">⌫</button>
+            <button type="button" data-key="0">0</button>
+            <button type="button" data-key="Enter" class="key-ok" aria-label="Comprobar">✓</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Logros -->
     <section class="view" id="view-awards" hidden>
       <div class="view-head"><h1>Mis logros</h1></div>
@@ -111,7 +152,7 @@
     <section class="view" id="view-abacus" hidden>
       <div class="view-head"><h1>Ábaco libre</h1></div>
       <div class="card">
-        <p>Toca o desliza las cuentas. <b>Las de abajo valen 1</b> y <b>la de arriba vale 5</b>. Solo cuentan las que tocan la barra.</p>
+        <p>Toca o desliza las bolitas. <b>Las de abajo valen 1</b> y <b>la de arriba vale 5</b>. Solo valen las que tocan la barra.</p>
         <div class="free-number" id="free-number">0</div>
         <div class="learn-abacus" id="free-abacus"></div>
         <div class="row center"><button class="btn btn-soft" id="free-clear" type="button">Limpiar</button></div>
@@ -224,8 +265,9 @@
         </div>
         <p class="level-message" id="result-level"></p>
         <div class="new-badges" id="result-badges"></div>
+        <button class="btn btn-accent btn-xl btn-block game-call" id="result-game" type="button" hidden>🎮 ¡Hora del juego!</button>
         <div class="row center">
-          <button class="btn btn-primary btn-xl" data-go="home" type="button">Ver mi camino</button>
+          <button class="btn btn-primary btn-xl" id="result-home" data-go="home" type="button">Ver mi camino</button>
           <button class="btn btn-soft" id="result-more" type="button">Otra vez</button>
         </div>
       </div>
@@ -332,6 +374,7 @@
           <div class="stats" id="route-stats"></div>
           <p class="why" id="route-rule"></p>
           <p class="muted" id="level-progress"></p>
+          <p class="muted" id="games-progress"></p>
           <p class="suggestion" id="level-suggestion" hidden></p>
         </div>
 
@@ -346,7 +389,7 @@
             <label>¿Con qué ábaco practica?
               <select id="set-abacus">
                 <option value="real">Ábaco real (responde con el teclado)</option>
-                <option value="pantalla">Ábaco en pantalla (mueve las cuentas)</option>
+                <option value="pantalla">Ábaco en pantalla (mueve las bolitas)</option>
               </select>
             </label>
           </div>
@@ -373,6 +416,7 @@
             </details>
           </div>
           <label class="check"><input type="checkbox" id="set-sound"> Sonidos</label>
+          <label class="check"><input type="checkbox" id="set-games-lock"> Los juegos se abren después de practicar ese día (recomendado)</label>
           <label class="check"><input type="checkbox" id="set-rtl"> Con teclado, en sumas en columna, escribir la respuesta de derecha a izquierda (unidades primero)</label>
           <label class="check"><input type="checkbox" id="set-labels"> Mostrar U, D, C debajo del ábaco</label>
         </div>
@@ -417,14 +461,16 @@
   <!-- Barra inferior: solo cuatro lugares, sin atajos que salten la lección -->
   <nav class="tabbar" id="tabbar" aria-label="Secciones">
     <button type="button" data-go="home" data-tab="home"><span aria-hidden="true">🗺️</span>Camino</button>
+    <button type="button" data-go="games" data-tab="games"><span aria-hidden="true">🎮</span>Juegos</button>
     <button type="button" data-go="awards" data-tab="awards"><span aria-hidden="true">🏅</span>Logros</button>
     <button type="button" data-go="abacus" data-tab="abacus"><span aria-hidden="true">🧮</span>Ábaco</button>
     <button type="button" data-go="parents" data-tab="parents"><span aria-hidden="true">👨‍👩‍👧</span>Padres</button>
   </nav>
 
-  <script src="js/curriculum.js?v=7"></script>
-  <script src="js/soroban.js?v=7"></script>
-  <script src="js/caligrafia.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script src="js/curriculum.js?v=8"></script>
+  <script src="js/soroban.js?v=8"></script>
+  <script src="js/caligrafia.js?v=8"></script>
+  <script src="js/juegos.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

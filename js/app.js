@@ -8,6 +8,7 @@
 
   const C = window.Curriculum;
   const K = window.Caligrafia;
+  const J = window.Juegos;
   const $ = id => document.getElementById(id);
   const STORE_KEY = 'abaco.v1';
   const AVATARS = ['🐼', '🦊', '🐰', '🐯', '🦄', '🐸', '🐨', '🐙'];
@@ -22,8 +23,9 @@
       avatar: '🐼',
       levelId: C.LEVELS[0].id,
       levelStart: 0,
-      settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true },
+      settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true, gamesLock: true },
       lessons: {},
+      games: { schulte: { size: 3, best: {} }, span: {}, flash: {}, corsi: {}, log: [] },
       levelStars: {},
       stars: 0,
       history: []
@@ -39,6 +41,7 @@
         data.settings = Object.assign(defaults().settings, saved.settings);
         data.lessons = Object.assign({}, saved.lessons);
         data.levelStars = Object.assign({}, saved.levelStars);
+        data.games = Object.assign(defaults().games, saved.games);
       }
     } catch (e) {
       // Sin almacenamiento disponible: la app funciona igual, sin recordar.
@@ -173,6 +176,7 @@
   const soundOk = () => playTones([660, 880]);
   const soundTry = () => playTones([300]);
   const soundWin = () => playTones([523, 659, 784, 1047]);
+  const soundTick = () => playTones([880]);
 
   // Voz de Mapi con la síntesis del dispositivo. La calidad depende de las voces
   // instaladas: se elige la más natural en español (o la que elijan los padres).
@@ -272,12 +276,13 @@
   function show(view) {
     if (currentView === 'session' && view !== 'session') stopSession();
     if (currentView === 'paper' && view !== 'paper') stopPaperTimer();
+    if (currentView === 'game' && view !== 'game') stopGame();
     hush();
     currentView = view;
     document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'view-' + view; });
-    document.body.classList.toggle('in-session', view === 'session');
+    document.body.classList.toggle('in-session', view === 'session' || view === 'game');
     $('print-sheets').hidden = view !== 'print';
-    const tab = { home: 'home', awards: 'awards', abacus: 'abacus', parents: 'parents', print: 'parents', paper: 'home', result: 'home' }[view];
+    const tab = { home: 'home', games: 'games', awards: 'awards', abacus: 'abacus', parents: 'parents', print: 'parents', paper: 'home', result: 'home' }[view];
     document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
     window.scrollTo(0, 0);
     if (view === 'home') renderHome();
@@ -286,6 +291,7 @@
     if (view === 'parents') renderParents();
     if (view === 'awards') renderAwards();
     if (view === 'paper') renderPaper();
+    if (view === 'games') renderGames();
   }
 
   document.addEventListener('click', e => {
@@ -507,7 +513,7 @@
       concepts.appendChild(li);
     });
     $('briefing-plan').textContent = seen
-      ? `Hoy practicas por tu cuenta: ${data.settings.perSession} ejercicios.`
+      ? `Hoy practicas sin ayuda: ${data.settings.perSession} ejercicios.`
       : 'Primero miras, después lo hacemos juntos y al final lo intentas tú.';
     $('briefing-go').textContent = seen ? '¡Vamos!' : '👀 Empezar la lección';
     $('briefing-lesson').hidden = !seen;
@@ -746,7 +752,7 @@
       const spoken = spokenTerms(ex.terms);
       if (useAbacus) {
         addAbacusAnswer(body, ex);
-        mapi('bubble', 'Mueve las cuentas y toca «¡Listo!».', null, `Mueve las cuentas: ${spoken}.`);
+        mapi('bubble', 'Mueve las bolitas y toca «¡Listo!».', null, `Mueve las bolitas: ${spoken}.`);
       } else {
         addAction('🧮 Ábaco en pantalla', 'btn-soft', () => openAbacusSheet(ex));
         mapi('bubble', 'Hazlo en tu ábaco y escribe el resultado.', null, `Hazlo en tu ábaco: ${spoken}.`);
@@ -1087,8 +1093,10 @@
   /* --- Barra de la sesión --- */
 
   function updateVoiceButton() {
-    $('session-voice').classList.toggle('is-off', !data.settings.voice);
-    $('session-voice').textContent = data.settings.voice ? '🔊' : '🔇';
+    ['session-voice', 'game-voice'].forEach(id => {
+      $(id).classList.toggle('is-off', !data.settings.voice);
+      $(id).textContent = data.settings.voice ? '🔊' : '🔇';
+    });
   }
 
   $('session-voice').addEventListener('click', () => {
@@ -1139,8 +1147,11 @@
     $('result-level').textContent = message;
     $('result-more').dataset.level = review ? levelId : '';
     $('result-more').hidden = source === 'papel';
+    // Después de practicar (sobre todo después de la hoja), el premio es un juego.
+    $('result-game').hidden = false;
+    $('result-home').className = 'btn btn-soft';
     show('result');
-    say(`${title} ${correct} de ${total}. ${message}` + (fresh.length ? ` ¡Ganaste la medalla ${fresh[0].name}!` : ''));
+    say(`${title} ${correct} de ${total}. ${message}` + (fresh.length ? ` ¡Ganaste la medalla ${fresh[0].name}!` : '') + ' ¡Y ahora, hora del juego!');
     soundWin();
     confetti(stars === 3 || levelUp ? 70 : 30);
   }
@@ -1155,6 +1166,8 @@
     if (stats.recentPassed === 1) return 'Ya tienes 1 sesión dominada: la próxima puede ser la segunda. 💪';
     return 'Repetiremos este nivel para dominarlo. ¡Practicar es el secreto! 💪';
   }
+
+  $('result-game').addEventListener('click', () => show('games'));
 
   $('result-more').addEventListener('click', e => startSession(e.currentTarget.dataset.level || undefined));
 
@@ -1396,9 +1409,9 @@
     const instruction = document.createElement('p');
     instruction.className = 'sheet-instruction';
     instruction.textContent = '◆ ' + (kinds.has('opciones')
-      ? 'Encierra la respuesta correcta. Colorea las cuentas del número que se pide.'
+      ? 'Encierra la respuesta correcta. Colorea las bolitas del número que se pide.'
       : kinds.has('leer') || kinds.has('poner')
-        ? 'Escribe el número que muestra el ábaco, o colorea las cuentas del número que se pide.'
+        ? 'Escribe el número que muestra el ábaco, o colorea las bolitas del número que se pide.'
         : kinds.has('flash') ? 'Calcula de memoria, sin ábaco:' : level.instruction + ' con tu ábaco:');
     sheet.appendChild(instruction);
 
@@ -1592,6 +1605,197 @@
   $('demo-prev').addEventListener('click', () => { if (demo.i > 0) { demo.i--; showDemoStep(); } });
   $('demo-next').addEventListener('click', () => { if (demo.i < demo.steps.length - 1) { demo.i++; showDemoStep(); } });
 
+  /* ---------- Juegos de concentración ---------- */
+
+  let stopCurrentGame = null;
+  let gameAnswer = null;
+
+  function gamesUnlocked() {
+    return !data.settings.gamesLock || streakInfo().doneToday;
+  }
+
+  // Cifras que puede leer en el ábaco según lo que ya aprendió.
+  function flashMaxDigits() {
+    const i = C.levelIndex(data.levelId);
+    if (i < C.levelIndex('A6')) return 1;
+    if (i < C.levelIndex('A8')) return 2;
+    return 3;
+  }
+
+  function renderGames() {
+    const unlocked = gamesUnlocked();
+    const today_ = J.gameOfDay(dayNumber(today()));
+    $('games-bubble').textContent = unlocked
+      ? `¡Elige un juego! El de hoy es «${today_.name}». Entrenan tu atención y tu memoria.`
+      : 'Los juegos se abren cuando terminas tu práctica de hoy. ¡Vamos a practicar primero!';
+    const box = $('games-list');
+    box.innerHTML = '';
+    J.GAMES.forEach(g => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'game-card' + (g.id === today_.id ? ' is-today' : '') + (unlocked ? '' : ' is-locked');
+      card.appendChild(textSpan(g.icon, 'game-icon'));
+      const info = document.createElement('span');
+      info.className = 'game-info';
+      info.appendChild(textSpan(g.name, 'game-name'));
+      info.appendChild(textSpan(g.short, 'game-short'));
+      info.appendChild(textSpan(g.record(data.games[g.id]), 'game-record'));
+      card.appendChild(info);
+      if (g.id === today_.id) card.appendChild(textSpan('Hoy', 'game-badge'));
+      card.addEventListener('click', () => {
+        if (!gamesUnlocked()) {
+          mapi('games-bubble', 'Primero tu práctica de hoy y después, ¡a jugar!', 'try');
+          return;
+        }
+        openGame(g);
+      });
+      box.appendChild(card);
+    });
+    if (!unlocked) {
+      const go = document.createElement('button');
+      go.type = 'button';
+      go.className = 'btn btn-primary btn-block btn-xl';
+      go.textContent = '▶ Ir a practicar';
+      go.addEventListener('click', () => show('home'));
+      box.appendChild(go);
+    }
+  }
+
+  // Pantalla de inicio de cada juego: Mapi explica antes de jugar.
+  function openGame(g) {
+    show('game');
+    $('game-title').textContent = `${g.icon} ${g.name}`;
+    $('game-status').textContent = '';
+    $('game-keypad').hidden = true;
+    updateVoiceButton();
+    const board = $('game-board');
+    board.innerHTML = '';
+    board.appendChild(textSpan(g.icon, 'game-hero'));
+    board.appendChild(textSpan(g.record(data.games[g.id]), 'game-record'));
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'btn btn-primary btn-xl';
+    play.textContent = '▶ ¡Jugar!';
+    play.addEventListener('click', () => playGame(g));
+    board.appendChild(play);
+    mapi('game-bubble', g.intro(data.games[g.id]));
+  }
+
+  function playGame(g) {
+    stopGame();
+    $('game-keypad').hidden = true;
+    stopCurrentGame = J.start(g.id, {
+      board: $('game-board'),
+      state: data.games[g.id],
+      maxDigits: flashMaxDigits(),
+      maxOneDigit: C.levelIndex(data.levelId) < C.levelIndex('A3') ? 4 : C.levelIndex(data.levelId) < C.levelIndex('A4') ? 5 : 9,
+      Soroban: window.Soroban,
+      sounds: { ok: soundOk, bad: soundTry, tick: soundTick },
+      say: (text, mood, speech) => mapi('game-bubble', text, mood, speech),
+      status: text => { $('game-status').textContent = text; },
+      ask: len => askGameNumber(len),
+      finish: result => finishGame(g, result)
+    });
+  }
+
+  function stopGame() {
+    if (stopCurrentGame) stopCurrentGame();
+    stopCurrentGame = null;
+    gameAnswer = null;
+  }
+
+  // Casillas + teclado para escribir el número que recuerda.
+  function askGameNumber(len) {
+    return new Promise(resolve => {
+      const board = $('game-board');
+      const boxes = document.createElement('span');
+      boxes.className = 'answer-boxes';
+      for (let i = 0; i < len; i++) boxes.appendChild(textSpan('', 'answer-box'));
+      const row = document.createElement('div');
+      row.className = 'answer-row';
+      row.appendChild(boxes);
+      board.appendChild(row);
+      $('game-keypad').hidden = false;
+      gameAnswer = { text: '', len, boxes, resolve };
+    });
+  }
+
+  function gameKey(key) {
+    if (!gameAnswer) return;
+    const a = gameAnswer;
+    if (key === 'Enter') {
+      if (!a.text) return;
+      gameAnswer = null;
+      $('game-keypad').hidden = true;
+      a.resolve(a.text);
+      return;
+    }
+    if (key === 'Backspace') a.text = a.text.slice(0, -1);
+    else if (/^[0-9]$/.test(key) && a.text.length < a.len) a.text += key;
+    [...a.boxes.children].forEach((box, i) => { box.textContent = a.text[i] || ''; });
+  }
+
+  $('game-keypad').addEventListener('click', e => {
+    const b = e.target.closest('[data-key]');
+    if (b) gameKey(b.dataset.key);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (currentView !== 'game' || e.target.closest('input, select, textarea')) return;
+    if (/^[0-9]$/.test(e.key) || e.key === 'Backspace' || e.key === 'Enter') {
+      e.preventDefault();
+      gameKey(e.key);
+    }
+  });
+
+  function finishGame(g, result) {
+    stopCurrentGame = null;
+    const before = new Set(wonBadges().map(b => b.id));
+    data.games.log = (data.games.log || []).concat({ date: today(), game: g.id, score: result.score, stars: result.stars }).slice(-200);
+    data.stars = (data.stars || 0) + result.stars;
+    save();
+    const fresh = wonBadges().filter(b => !before.has(b.id));
+    $('game-status').textContent = '';
+    $('game-keypad').hidden = true;
+    const board = $('game-board');
+    board.innerHTML = '';
+    board.appendChild(textSpan('⭐'.repeat(result.stars) + '☆'.repeat(3 - result.stars), 'stars'));
+    if (result.record) board.appendChild(textSpan('🏆 ¡Nuevo récord!', 'game-new-record'));
+    board.appendChild(textSpan(result.text, 'game-result-text'));
+    const badges = document.createElement('div');
+    badges.className = 'new-badges';
+    fresh.forEach(b => badges.appendChild(badgeCard(b, true, '¡Nueva medalla!')));
+    board.appendChild(badges);
+    const row = document.createElement('div');
+    row.className = 'row center';
+    const again = document.createElement('button');
+    again.type = 'button';
+    again.className = 'btn btn-primary btn-xl';
+    again.textContent = '↺ Otra vez';
+    again.addEventListener('click', () => playGame(g));
+    const other = document.createElement('button');
+    other.type = 'button';
+    other.className = 'btn btn-soft';
+    other.textContent = 'Otros juegos';
+    other.addEventListener('click', () => show('games'));
+    row.appendChild(again);
+    row.appendChild(other);
+    board.appendChild(row);
+    const cheer = result.stars === 3 ? '¡Increíble!' : result.stars === 2 ? '¡Muy bien!' : '¡Buen trabajo!';
+    mapi('game-bubble', `${cheer} ${result.text}` + (fresh.length ? ` ¡Ganaste la medalla ${fresh[0].name}!` : ''), 'ok');
+    soundWin();
+    confetti(result.record || result.stars === 3 ? 60 : 20);
+  }
+
+  $('game-exit').addEventListener('click', () => show('games'));
+  $('game-voice').addEventListener('click', () => {
+    data.settings.voice = !data.settings.voice;
+    save();
+    updateVoiceButton();
+    if (data.settings.voice) say($('game-bubble').textContent);
+    else hush();
+  });
+
   /* ---------- Logros ---------- */
 
   function statTile(label, value) {
@@ -1612,7 +1816,11 @@
       { id: 'racha3', icon: '🔥', name: '3 días seguidos', desc: 'Practicar 3 días seguidos', won: (d, s) => s.best >= 3 },
       { id: 'racha7', icon: '🔥', name: 'Una semana', desc: 'Practicar 7 días seguidos', won: (d, s) => s.best >= 7 },
       { id: 'racha30', icon: '🏆', name: 'Un mes', desc: 'Practicar 30 días seguidos', won: (d, s) => s.best >= 30 },
-      { id: 'estrellas50', icon: '🌟', name: '50 estrellas', desc: 'Juntar 50 estrellas', won: d => (d.stars || 0) >= 50 }
+      { id: 'estrellas50', icon: '🌟', name: '50 estrellas', desc: 'Juntar 50 estrellas', won: d => (d.stars || 0) >= 50 },
+      { id: 'juego1', icon: '🎮', name: 'A jugar', desc: 'Terminar un juego de concentración', won: d => (d.games.log || []).length >= 1 },
+      { id: 'schulte4', icon: '🦅', name: 'Ojo de águila', desc: 'Terminar la tabla de Schulte de 4×4', won: d => !!(d.games.schulte.best || {})[4] },
+      { id: 'memoria5', icon: '🐘', name: 'Memoria de elefante', desc: 'Recordar un número de 5 cifras', won: d => (d.games.span.best || 0) >= 5 },
+      { id: 'corsi5', icon: '💡', name: 'Camino de luces', desc: 'Repetir 5 luces en orden', won: d => (d.games.corsi.best || 0) >= 5 }
     ];
     C.MODULES.forEach((mod, m) => {
       const last = mod.levels[mod.levels.length - 1];
@@ -1680,6 +1888,8 @@
     fillVoiceSelect();
     $('set-voice-rate').value = String(data.settings.voiceRate || 0.95);
     $('set-sound').checked = data.settings.sound;
+    $('set-games-lock').checked = data.settings.gamesLock;
+    $('games-progress').textContent = 'Juegos · ' + J.GAMES.map(g => `${g.name}: ${g.record(data.games[g.id]).replace('Récord: ', '')}`).join(' · ');
     $('set-rtl').checked = data.settings.rtl;
     $('set-labels').checked = data.settings.labels;
     const stats = levelStats(level.id);
@@ -1766,6 +1976,7 @@
     data.settings.voice = was;
   });
   $('set-sound').addEventListener('change', e => { data.settings.sound = e.target.checked; save(); });
+  $('set-games-lock').addEventListener('change', e => { data.settings.gamesLock = e.target.checked; save(); });
   $('set-rtl').addEventListener('change', e => { data.settings.rtl = e.target.checked; save(); });
   $('set-labels').addEventListener('change', e => { data.settings.labels = e.target.checked; save(); });
 
@@ -1789,6 +2000,7 @@
         data = Object.assign(defaults(), imported);
         data.settings = Object.assign(defaults().settings, imported.settings);
         data.lessons = Object.assign({}, imported.lessons);
+        data.games = Object.assign(defaults().games, imported.games);
         save();
         renderParents();
         window.alert('¡Progreso importado!');

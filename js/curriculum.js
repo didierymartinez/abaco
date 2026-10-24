@@ -156,19 +156,19 @@
   }
 
   const PARTS_QUESTIONS = [
-    { question: '¿Cuánto vale la cuenta de arriba, la del cielo?', options: ['5', '1', '10'], answer: '5', hint: 'La cuenta del cielo vale 5 cuando toca la barra.' },
-    { question: '¿Cuánto vale cada cuenta de abajo, las de tierra?', options: ['1', '5', '4'], answer: '1', hint: 'Cada cuenta de tierra vale 1 cuando toca la barra.' },
-    { question: '¿Qué número muestra el ábaco?', value: 0, options: ['0', '4', '5'], answer: '0', hint: 'Ninguna cuenta toca la barra: es el 0.' },
-    { question: '¿Qué número muestra el ábaco?', value: 5, options: ['1', '4', '5'], answer: '5', hint: 'Solo la cuenta del cielo toca la barra.' },
-    { question: '¿Qué número muestra el ábaco?', value: 1, options: ['1', '2', '5'], answer: '1', hint: 'Una cuenta de tierra toca la barra.' },
-    { question: '¿Qué cuentas cuentan?', options: ['Las que tocan la barra', 'Las que están lejos', 'Todas'], answer: 'Las que tocan la barra', hint: 'Solo cuentan las cuentas pegadas a la barra del medio.' },
+    { question: '¿Cuánto vale la bolita de arriba?', options: ['5', '1', '10'], answer: '5', hint: 'La bolita de arriba vale 5 cuando toca la barra.' },
+    { question: '¿Cuánto vale cada bolita de abajo?', options: ['1', '5', '4'], answer: '1', hint: 'Cada bolita de abajo vale 1 cuando toca la barra.' },
+    { question: '¿Qué número muestra el ábaco?', value: 0, options: ['0', '4', '5'], answer: '0', hint: 'Ninguna bolita toca la barra: es el 0.' },
+    { question: '¿Qué número muestra el ábaco?', value: 5, options: ['1', '4', '5'], answer: '5', hint: 'Solo la bolita de arriba toca la barra.' },
+    { question: '¿Qué número muestra el ábaco?', value: 1, options: ['1', '2', '5'], answer: '1', hint: 'Una bolita de abajo toca la barra.' },
+    { question: '¿Qué bolitas valen?', options: ['Las que tocan la barra', 'Las que están lejos', 'Todas'], answer: 'Las que tocan la barra', hint: 'Solo valen las bolitas pegadas a la barra del medio.' },
     { question: '¿Cuál varilla es la de las unidades?', options: ['La de la derecha', 'La del medio', 'La de la izquierda'], answer: 'La de la derecha', hint: 'Las unidades son la varilla de la derecha, la del punto.' },
-    { question: '¿Con qué dedo subes las cuentas de tierra?', options: ['El pulgar', 'El índice', 'El meñique'], answer: 'El pulgar', hint: 'El pulgar sube las cuentas de tierra; el índice las baja.' }
+    { question: '¿Con qué dedo subes las bolitas de abajo?', options: ['El pulgar', 'El índice', 'El meñique'], answer: 'El pulgar', hint: 'El pulgar sube las bolitas de abajo; el índice las baja.' }
   ];
 
   const FIVE_QUESTIONS = [
-    { question: '¿Cómo se pone el 5?', options: ['Con la cuenta del cielo', 'Con 5 cuentas de tierra', 'Con 1 cuenta de tierra'], answer: 'Con la cuenta del cielo', hint: 'Solo hay 4 cuentas de tierra: el 5 es la cuenta del cielo.' },
-    { question: '¿Cuántas cuentas de tierra tiene cada varilla?', options: ['4', '5', '10'], answer: '4', hint: 'Cuéntalas en tu ábaco: son 4 cuentas abajo.' }
+    { question: '¿Cómo se pone el 5?', options: ['Con la bolita de arriba', 'Con 5 bolitas de abajo', 'Con 1 bolita de abajo'], answer: 'Con la bolita de arriba', hint: 'Solo hay 4 bolitas de abajo: el 5 es la bolita de arriba.' },
+    { question: '¿Cuántas bolitas de abajo tiene cada varilla?', options: ['4', '5', '10'], answer: '4', hint: 'Míralas en tu ábaco: son 4 bolitas abajo.' }
   ];
 
   // Contar: el número que va después (o antes) de otro.
@@ -196,18 +196,18 @@
     {
       id: 'A1', group: 'Conozco el ábaco', name: 'Las partes del ábaco', targetSec: 15,
       instruction: 'Responde',
-      tip: 'La cuenta de arriba (cielo) vale 5 y cada una de abajo (tierra) vale 1. Solo cuentan las que tocan la barra.',
-      hint: 'Mira la barra del medio: solo cuentan las cuentas pegadas a ella.',
+      tip: 'La bolita de arriba vale 5 y cada bolita de abajo vale 1. Solo valen las que tocan la barra.',
+      hint: 'Mira la barra del medio: solo valen las bolitas pegadas a ella.',
       next: 'Ahora vamos a contar del 1 al 4.',
       lesson: {
         cards: [
           { value: 0, text: 'Este es el soroban, el ábaco japonés. Tiene un marco, varillas y una barra en el medio.' },
-          { value: 0, place: 0, text: 'Cada varilla tiene 1 cuenta arriba, la cuenta del cielo, y 4 cuentas abajo, las cuentas de tierra.' },
-          { value: 5, place: 0, text: 'La cuenta del cielo vale 5. Solo cuenta cuando baja y toca la barra.' },
-          { value: 1, place: 0, text: 'Cada cuenta de tierra vale 1. Solo cuenta cuando sube y toca la barra.' },
-          { value: 0, text: 'Si ninguna cuenta toca la barra, el ábaco marca 0. Así lo dejamos limpio antes de empezar.' },
+          { value: 0, place: 0, text: 'Cada varilla tiene 1 bolita arriba y 4 bolitas abajo. A la de arriba también la llaman «cielo» y a las de abajo, «tierra».' },
+          { value: 5, place: 0, text: 'La bolita de arriba vale 5. Solo vale cuando baja y toca la barra.' },
+          { value: 1, place: 0, text: 'Cada bolita de abajo vale 1. Solo vale cuando sube y toca la barra.' },
+          { value: 0, text: 'Si ninguna bolita toca la barra, el ábaco marca 0. Así lo dejamos limpio antes de empezar.' },
           { value: 0, place: 0, text: 'La varilla de la derecha, la del punto, son las unidades. Ahí empezamos a contar.' },
-          { value: 0, text: 'El pulgar sube las cuentas de tierra. El índice las baja y mueve la cuenta del cielo.' }
+          { value: 0, text: 'El pulgar sube las bolitas de abajo. El índice las baja y mueve la bolita de arriba.' }
         ]
       },
       gen: (rng, i) => i % 5 === 4 ? { type: 'poner', value: 0, answer: 0 } : choice(rng, rng.pick(PARTS_QUESTIONS))
@@ -215,33 +215,33 @@
     {
       id: 'A2', group: 'Conozco el ábaco', name: 'Contar del 1 al 4', targetSec: 10,
       instruction: 'Pon o lee el número',
-      tip: 'Sube las cuentas de tierra con el pulgar, una por una: 1, 2, 3, 4.',
-      hint: 'Cuenta las cuentas de tierra que tocan la barra.',
-      next: 'Después viene el 5, con la cuenta del cielo.',
+      tip: 'Sube las bolitas de abajo con el pulgar, una por una: 1, 2, 3, 4.',
+      hint: 'Mira cuántas bolitas de abajo tocan la barra.',
+      next: 'Después viene el 5, con la bolita de arriba.',
       lesson: {
         cards: [
           { value: 0, place: 0, text: 'Empezamos con el ábaco limpio, en 0.' },
-          { value: 1, place: 0, text: 'Sube 1 cuenta de tierra con el pulgar: es el 1.' },
+          { value: 1, place: 0, text: 'Sube 1 bolita de abajo con el pulgar: es el 1.' },
           { value: 2, place: 0, text: 'Sube otra: 2.' },
           { value: 3, place: 0, text: 'Una más: 3.' },
-          { value: 4, place: 0, text: 'Y otra: 4. ¡Ya usamos las 4 cuentas de tierra!' },
+          { value: 4, place: 0, text: 'Y otra: 4. ¡Ya usamos las 4 bolitas de abajo!' },
           { value: 0, place: 0, text: 'Para volver a 0, bájalas con el índice.' }
         ]
       },
       gen: (rng, i) => numberEx(rng, i, fromList([1, 2, 3, 4]))
     },
     {
-      id: 'A3', group: 'Conozco el ábaco', name: 'El 5: la cuenta del cielo', targetSec: 10,
+      id: 'A3', group: 'Conozco el ábaco', name: 'El 5: la bolita de arriba', targetSec: 10,
       instruction: 'Pon o lee el número',
-      tip: 'El 5 no son 5 cuentas de tierra: es la cuenta del cielo.',
-      hint: '¿Está la cuenta del cielo en la barra? Entonces hay 5.',
+      tip: 'El 5 no son 5 bolitas de abajo: es la bolita de arriba.',
+      hint: '¿Está la bolita de arriba en la barra? Entonces hay 5.',
       next: 'Después: del 6 al 9.',
       lesson: {
         cards: [
-          { value: 4, place: 0, text: 'Contamos hasta 4 y ya no quedan cuentas de tierra.' },
-          { value: 5, place: 0, text: 'Para el 5 usamos la cuenta del cielo: bájala con el índice y baja las 4 de tierra.' },
-          { value: 5, place: 0, text: 'El 5 es solo la cuenta del cielo tocando la barra.' },
-          { value: 0, place: 0, text: 'Para quitar el 5, sube la cuenta del cielo y el ábaco vuelve a 0.' }
+          { value: 4, place: 0, text: 'Contamos hasta 4 y ya no quedan bolitas de abajo.' },
+          { value: 5, place: 0, text: 'Para el 5 usamos la bolita de arriba: bájala con el índice y baja las 4 de abajo.' },
+          { value: 5, place: 0, text: 'El 5 es solo la bolita de arriba tocando la barra.' },
+          { value: 0, place: 0, text: 'Para quitar el 5, sube la bolita de arriba y el ábaco vuelve a 0.' }
         ]
       },
       gen: (rng, i) => i % 4 === 3 ? choice(rng, rng.pick(FIVE_QUESTIONS)) : numberEx(rng, i, fromList([5, 5, 1, 2, 3, 4]))
@@ -249,13 +249,13 @@
     {
       id: 'A4', group: 'Conozco el ábaco', name: 'Del 6 al 9', targetSec: 12,
       instruction: 'Pon o lee el número',
-      tip: '6 es 5 y 1: la cuenta del cielo y 1 de tierra. Así hasta el 9.',
-      hint: 'Primero mira el cielo (5) y luego suma las de tierra.',
+      tip: '6 es 5 y 1: la bolita de arriba y 1 de abajo. Así hasta el 9.',
+      hint: 'Primero mira la bolita de arriba (vale 5) y luego suma las de abajo.',
       next: 'Después contarás seguido del 0 al 9.',
       lesson: {
         cards: [
-          { value: 5, place: 0, text: 'Ya sabemos el 5: la cuenta del cielo.' },
-          { value: 6, place: 0, text: '6 es 5 y 1: la cuenta del cielo y 1 de tierra.' },
+          { value: 5, place: 0, text: 'Ya sabemos el 5: la bolita de arriba.' },
+          { value: 6, place: 0, text: '6 es 5 y 1: la bolita de arriba y 1 de abajo.' },
           { value: 7, place: 0, text: '7 es 5 y 2.' },
           { value: 8, place: 0, text: '8 es 5 y 3.' },
           { value: 9, place: 0, text: '9 es 5 y 4. ¡Es el número más grande de una varilla!' }
@@ -266,21 +266,21 @@
     {
       id: 'A5', group: 'Conozco el ábaco', name: 'Contar del 0 al 9', targetSec: 12,
       instruction: 'Cuenta en tu ábaco',
-      tip: 'Contar es subir de uno en uno. Al llegar a 5 cambia: baja el cielo y quita las 4 de tierra.',
-      hint: 'Pon el primer número y mueve una sola cuenta más (o menos).',
+      tip: 'Contar es subir de uno en uno. Al llegar a 5 cambia: baja la bolita de arriba y quita las 4 de abajo.',
+      hint: 'Pon el primer número y mueve una sola bolita más (o menos).',
       next: 'Después: el 10 y la varilla de las decenas.',
       lesson: {
         cards: [
           { value: 0, place: 0, text: 'Vamos a contar de uno en uno. Empezamos en 0.' },
-          { value: 1, place: 0, text: '1: sube una cuenta de tierra.' },
+          { value: 1, place: 0, text: '1: sube una bolita de abajo.' },
           { value: 2, place: 0, text: '2: sube otra.' },
           { value: 3, place: 0, text: '3: una más.' },
-          { value: 4, place: 0, text: '4: ya no quedan cuentas de tierra.' },
-          { value: 5, place: 0, text: '5: aquí cambia. Baja el cielo y quita las 4 de tierra.' },
-          { value: 6, place: 0, text: '6: el cielo y 1 de tierra.' },
-          { value: 7, place: 0, text: '7: el cielo y 2.' },
-          { value: 8, place: 0, text: '8: el cielo y 3.' },
-          { value: 9, place: 0, text: '9: el cielo y 4. ¡La varilla está llena!' },
+          { value: 4, place: 0, text: '4: ya no quedan bolitas de abajo.' },
+          { value: 5, place: 0, text: '5: aquí cambia. Baja la de arriba y quita las 4 de abajo.' },
+          { value: 6, place: 0, text: '6: la de arriba y 1 de abajo.' },
+          { value: 7, place: 0, text: '7: la de arriba y 2.' },
+          { value: 8, place: 0, text: '8: la de arriba y 3.' },
+          { value: 9, place: 0, text: '9: la de arriba y 4. ¡La varilla está llena!' },
           { value: 8, place: 0, text: 'Contar hacia atrás también vale: 9, 8, 7… quitando de una en una.' }
         ]
       },
@@ -289,16 +289,16 @@
     {
       id: 'A6', group: 'Conozco el ábaco', name: 'El 10 y las decenas', targetSec: 12,
       instruction: 'Pon o lee el número',
-      tip: 'El 10 es 1 cuenta en la varilla de las decenas, a la izquierda de las unidades.',
-      hint: 'Mira la segunda varilla desde la derecha: cada cuenta de tierra ahí vale 10.',
+      tip: 'El 10 es 1 bolita en la varilla de las decenas, a la izquierda de las unidades.',
+      hint: 'Mira la segunda varilla desde la derecha: cada bolita de abajo ahí vale 10.',
       next: 'Después: todos los números hasta el 99.',
       lesson: {
         cards: [
-          { value: 9, place: 0, text: 'Después del 9 ya no caben más cuentas en las unidades.' },
-          { value: 10, place: 1, text: 'El 10 se pone con 1 cuenta en la varilla de la izquierda: las decenas. Las unidades quedan en 0.' },
-          { value: 20, place: 1, text: '20 son 2 cuentas en las decenas.' },
-          { value: 50, place: 1, text: '50 es la cuenta del cielo en las decenas.' },
-          { value: 90, place: 1, text: '90 es el cielo y 4 de tierra en las decenas.' }
+          { value: 9, place: 0, text: 'Después del 9 ya no caben más bolitas en las unidades.' },
+          { value: 10, place: 1, text: 'El 10 se pone con 1 bolita en la varilla de la izquierda: las decenas. Las unidades quedan en 0.' },
+          { value: 20, place: 1, text: '20 son 2 bolitas en las decenas.' },
+          { value: 50, place: 1, text: '50 es la bolita de arriba en las decenas.' },
+          { value: 90, place: 1, text: '90 es la de arriba y 4 de abajo en las decenas.' }
         ]
       },
       gen: (rng, i) => numberEx(rng, i, fromList([10, 20, 30, 40, 50, 60, 70, 80, 90]))
@@ -313,8 +313,8 @@
         cards: [
           { value: 24, place: 1, text: '24: primero 2 en las decenas…' },
           { value: 24, place: 0, text: '…y 4 en las unidades.' },
-          { value: 57, place: 1, text: '57: 5 en las decenas, con la cuenta del cielo…' },
-          { value: 57, place: 0, text: '…y 7 en las unidades: el cielo y 2 de tierra.' },
+          { value: 57, place: 1, text: '57: 5 en las decenas, con la bolita de arriba…' },
+          { value: 57, place: 0, text: '…y 7 en las unidades: la de arriba y 2 de abajo.' },
           { value: 99, text: '99 es el número más grande con dos varillas.' }
         ]
       },
@@ -323,12 +323,12 @@
     {
       id: 'A8', group: 'Conozco el ábaco', name: 'Números hasta el 999', targetSec: 18,
       instruction: 'Pon o lee el número',
-      tip: 'La tercera varilla desde la derecha son las centenas. Una varilla sin cuentas es un 0.',
+      tip: 'La tercera varilla desde la derecha son las centenas. Una varilla sin bolitas es un 0.',
       hint: 'Lee de izquierda a derecha: centenas, decenas y unidades.',
       next: 'Ya sabes formar números: ¡ahora a sumar!',
       lesson: {
         cards: [
-          { value: 100, place: 2, text: '100 es 1 cuenta en la tercera varilla: las centenas.' },
+          { value: 100, place: 2, text: '100 es 1 bolita en la tercera varilla: las centenas.' },
           { value: 305, place: 1, text: '305: 3 centenas, 0 decenas y 5 unidades. La varilla vacía es el 0.' },
           { value: 999, text: '999 es el más grande con tres varillas.' }
         ]
@@ -336,13 +336,13 @@
       gen: (rng, i) => numberEx(rng, i, fromRange(100, 999))
     },
     {
-      id: 'B1', group: 'Sumas y restas directas', name: 'Sumar con las cuentas de tierra', targetSec: 10,
+      id: 'B1', group: 'Sumas y restas directas', name: 'Sumar con las bolitas de abajo', targetSec: 10,
       instruction: 'Suma',
-      tip: 'Sumar es agregar: pon el primer número y sube más cuentas de tierra.',
-      hint: 'Pon el primer número y luego sube las cuentas del segundo.',
-      next: 'Después sumarás 5 o más con la cuenta del cielo.',
+      tip: 'Sumar es agregar: pon el primer número y sube más bolitas de abajo.',
+      hint: 'Pon el primer número y luego sube las bolitas del segundo.',
+      next: 'Después sumarás 5 o más con la bolita de arriba.',
       lesson: {
-        cards: [{ value: 2, place: 0, text: 'Sumar es agregar cuentas: las acercamos a la barra.' }],
+        cards: [{ value: 2, place: 0, text: 'Sumar es agregar bolitas: las acercamos a la barra.' }],
         examples: [[2, 1], [1, 3]]
       },
       gen: rng => calc(genPair(rng, { op: '+', a: [1, 9], b: [1, 4], rule: 'directo' }))
@@ -350,11 +350,11 @@
     {
       id: 'B2', group: 'Sumas y restas directas', name: 'Sumar 5 o más', targetSec: 10,
       instruction: 'Suma',
-      tip: 'Para sumar 5 baja la cuenta del cielo. Para sumar 6, el cielo y 1 de tierra.',
-      hint: 'Si sumas 5 o más, usa la cuenta del cielo.',
-      next: 'Después: restar quitando cuentas.',
+      tip: 'Para sumar 5 baja la bolita de arriba. Para sumar 6, la de arriba y 1 de abajo.',
+      hint: 'Si sumas 5 o más, usa la bolita de arriba.',
+      next: 'Después: restar quitando bolitas.',
       lesson: {
-        cards: [{ value: 0, place: 0, text: 'Para sumar 5 bajamos la cuenta del cielo.' }],
+        cards: [{ value: 0, place: 0, text: 'Para sumar 5 bajamos la bolita de arriba.' }],
         examples: [[2, 5], [1, 7]]
       },
       gen: rng => calc(genPair(rng, { op: '+', a: [1, 4], b: [5, 8], rule: 'directo' }))
@@ -362,11 +362,11 @@
     {
       id: 'B3', group: 'Sumas y restas directas', name: 'Restas directas', targetSec: 10,
       instruction: 'Resta',
-      tip: 'Restar es quitar: alejamos cuentas de la barra.',
-      hint: 'Pon el primer número y luego quita las cuentas del segundo.',
+      tip: 'Restar es quitar: alejamos bolitas de la barra.',
+      hint: 'Pon el primer número y luego quita las bolitas del segundo.',
       next: 'Pronto conocerás a los amigos del 5.',
       lesson: {
-        cards: [{ value: 4, place: 0, text: 'Restar es quitar cuentas: las alejamos de la barra.' }],
+        cards: [{ value: 4, place: 0, text: 'Restar es quitar bolitas: las alejamos de la barra.' }],
         examples: [[4, -3], [8, -5], [9, -6]]
       },
       gen: rng => calc(genPair(rng, { op: '-', digits: 1, rule: 'directo' }))
@@ -379,7 +379,7 @@
       next: 'Después usarás los amigos del 5 para restar.',
       lesson: {
         cards: [
-          { value: 4, place: 0, text: 'Tengo 4 y quiero sumar 1… ¡ya no quedan cuentas de tierra!' },
+          { value: 4, place: 0, text: 'Tengo 4 y quiero sumar 1… ¡ya no quedan bolitas de abajo!' },
           { value: 4, place: 0, text: 'Los amigos del 5 son parejas que juntas hacen 5: 1 y 4, 2 y 3.' }
         ],
         examples: [[4, 1], [3, 3]]
@@ -389,11 +389,11 @@
     {
       id: 'C2', group: 'Amigos del 5', name: 'Restar con los amigos del 5', targetSec: 12,
       instruction: 'Resta',
-      tip: 'Si no hay cuentas de tierra para quitar, pon al amigo abajo y quita el 5 de arriba.',
-      hint: 'Pon al amigo del número en la tierra y luego quita el cielo.',
+      tip: 'Si no hay bolitas de abajo para quitar, pon al amigo abajo y quita el 5 de arriba.',
+      hint: 'Pon al amigo del número con las bolitas de abajo y luego quita la bolita de arriba.',
       next: 'Luego vienen los amigos del 10, que pasan a la varilla de la izquierda.',
       lesson: {
-        cards: [{ value: 5, place: 0, text: 'Tengo 5 y quiero quitar 1… ¡no hay cuentas de tierra para quitar!' }],
+        cards: [{ value: 5, place: 0, text: 'Tengo 5 y quiero quitar 1… ¡no hay bolitas de abajo para quitar!' }],
         examples: [[5, -1], [6, -3]]
       },
       gen: rng => calc(genPair(rng, { op: '-', digits: 1, rule: 'amigo5' }))
@@ -428,7 +428,7 @@
     {
       id: 'D3', group: 'Amigos del 10', name: 'Sumas y restas mezcladas', targetSec: 16,
       instruction: 'Calcula de arriba a abajo',
-      tip: 'Ve número por número. Mira el signo antes de mover las cuentas.',
+      tip: 'Ve número por número. Mira el signo antes de mover las bolitas.',
       hint: 'Detente, mira el signo y luego mueve. Un número a la vez.',
       next: 'Pronto sumarás números de dos cifras.',
       lesson: {
@@ -509,11 +509,11 @@
     {
       id: 'H1', group: 'Anzan (ábaco mental)', name: 'Flash de 3 números', targetSec: 15,
       instruction: 'Calcula de memoria',
-      tip: 'Imagina el ábaco en tu cabeza y mueve las cuentas con la mente.',
-      hint: 'Imagina el ábaco y mueve las cuentas en tu mente con cada número.',
+      tip: 'Imagina el ábaco en tu cabeza y mueve las bolitas con la mente.',
+      hint: 'Imagina el ábaco y mueve las bolitas en tu mente con cada número.',
       next: 'Luego, más números y más rápido.',
       lesson: {
-        cards: [{ value: 0, text: 'Ahora el ábaco está en tu cabeza. Cierra los ojos e imagina las cuentas mientras ves cada número.' }],
+        cards: [{ value: 0, text: 'Ahora el ábaco está en tu cabeza. Cierra los ojos e imagina las bolitas mientras ves cada número.' }],
         examples: [[3, 4, -2]]
       },
       gen: rng => calc(genChain(rng, { count: 3, digits: 1, max: 18, rule: 'libre' }), { type: 'flash', intervalMs: 1600 })
@@ -531,11 +531,11 @@
 
   // Módulos de la ruta: agrupan niveles con un objetivo común.
   const MODULES = [
-    { title: 'Conozco el ábaco', objective: 'Conocer el soroban, contar y formar números sin contar cuenta por cuenta.',
-      concepts: ['Arriba vale 5, abajo vale 1', 'Solo cuentan las que tocan la barra', 'Derecha → izquierda: U, D, C'] },
-    { title: 'Sumas y restas directas', objective: 'Sumar y restar moviendo las cuentas que caben sin ayuda.',
+    { title: 'Conozco el ábaco', objective: 'Conocer el soroban, contar y formar números sin contar bolita por bolita.',
+      concepts: ['Arriba vale 5, abajo vale 1', 'Solo valen las que tocan la barra', 'Derecha → izquierda: U, D, C'] },
+    { title: 'Sumas y restas directas', objective: 'Sumar y restar moviendo las bolitas que caben sin ayuda.',
       concepts: ['Sumar = acercar a la barra', 'Restar = alejar de la barra', 'El pulgar sube, el índice baja'] },
-    { title: 'Amigos del 5', objective: 'Usar la cuenta del cielo cuando no caben las de tierra.',
+    { title: 'Amigos del 5', objective: 'Usar la bolita de arriba cuando no caben las de abajo.',
       concepts: ['1 y 4 son amigos', '2 y 3 son amigos', '+4 = +5 −1'] },
     { title: 'Amigos del 10', objective: 'Pasar a la varilla de la izquierda con los amigos del 10.',
       concepts: ['1·9  2·8  3·7  4·6  5·5', '+9 = −1 +10', '−9 = −10 +1'] },
@@ -546,7 +546,7 @@
     { title: 'Listas de soroban', objective: 'Sumar y restar varios números seguidos sin borrar el ábaco.',
       concepts: ['Mira el signo antes de mover', 'No borres entre números', 'Un número a la vez'] },
     { title: 'Anzan (ábaco mental)', objective: 'Calcular con un ábaco imaginario.',
-      concepts: ['Imagina las cuentas', 'Muévelas en tu mente', 'Precisión primero'] }
+      concepts: ['Imagina las bolitas', 'Muévelas en tu mente', 'Precisión primero'] }
   ].map(m => Object.assign(m, { levels: LEVELS.filter(l => l.group === m.title) }));
 
   function moduleOf(levelId) { return MODULES.find(m => m.levels.some(l => l.id === levelId)); }
@@ -602,13 +602,13 @@
 
   const PLACE = ['unidades', 'decenas', 'centenas', 'unidades de mil', 'decenas de mil', 'centenas de mil'];
 
-  function cuentas(n) { return n === 1 ? '1 cuenta' : n + ' cuentas'; }
+  function bolitas(n) { return n === 1 ? '1 bolita' : n + ' bolitas'; }
 
   // Cómo poner (o quitar) un dígito sin ayuda de amigos.
   function directText(n, verb) {
-    if (n === 5) return `${verb} la cuenta del cielo`;
-    if (n > 5) return `${verb} la cuenta del cielo y ${cuentas(n - 5)} de tierra`;
-    return `${verb} ${cuentas(n)} de tierra`;
+    if (n === 5) return `${verb} la bolita de arriba`;
+    if (n > 5) return `${verb} la bolita de arriba y ${bolitas(n - 5)} de abajo`;
+    return `${verb} ${bolitas(n)} de abajo`;
   }
 
   // Devuelve una lista de pasos { value, place, text } para resolver la operación en el soroban.
@@ -635,9 +635,9 @@
             steps.push({ value, place: k, text: `En las ${where}: ${directText(n, 'pon')}.` });
           } else if (kind === 'amigo5') {
             value += 5 * p;
-            steps.push({ value, place: k, text: `En las ${where} no ${n === 1 ? 'cabe' : 'caben'} ${n} abajo: pon la cuenta del cielo (+5)…` });
+            steps.push({ value, place: k, text: `En las ${where} no ${n === 1 ? 'cabe' : 'caben'} ${n} abajo: pon la bolita de arriba (+5)…` });
             value -= (5 - n) * p;
-            steps.push({ value, place: k, text: `…y quita ${cuentas(5 - n)} de tierra. ¡${n} y ${5 - n} son amigos del 5!` });
+            steps.push({ value, place: k, text: `…y quita ${bolitas(5 - n)} de abajo. ¡${n} y ${5 - n} son amigos del 5!` });
           } else {
             value -= (10 - n) * p;
             steps.push({ value, place: k, text: `En las ${where} no cabe el ${n}: quita ${10 - n}, su amigo del 10…` });
@@ -652,9 +652,9 @@
             steps.push({ value, place: k, text: `En las ${where}: ${directText(n, 'quita')}.` });
           } else if (kind === 'amigo5') {
             value += (5 - n) * p;
-            steps.push({ value, place: k, text: `En las ${where} no hay ${n} abajo: pon ${cuentas(5 - n)} de tierra…` });
+            steps.push({ value, place: k, text: `En las ${where} no hay ${n} abajo: pon ${bolitas(5 - n)} de abajo…` });
             value -= 5 * p;
-            steps.push({ value, place: k, text: `…y quita la cuenta del cielo (−5). ¡${n} y ${5 - n} son amigos del 5!` });
+            steps.push({ value, place: k, text: `…y quita la bolita de arriba (−5). ¡${n} y ${5 - n} son amigos del 5!` });
           } else {
             const chain = Math.floor(value / (10 * p)) % 10 === 0 ? '. Como ahí hay un 0, pide prestado a la siguiente varilla y deja un 9' : '';
             value -= 10 * p;
@@ -683,15 +683,15 @@
       value += d * 10 ** k;
       steps.push({ value, place: k, text: `En las ${PLACE[k]}: ${directText(d, 'pon')}.` });
     }
-    steps.push({ value: v, place: null, text: v === 0 ? 'El 0 es el ábaco limpio: ninguna cuenta toca la barra.' : `¡Así se ve el ${v}!` });
+    steps.push({ value: v, place: null, text: v === 0 ? 'El 0 es el ábaco limpio: ninguna bolita toca la barra.' : `¡Así se ve el ${v}!` });
     return steps;
   }
 
   function beadsText(d) {
-    if (d === 0) return 'ninguna cuenta toca la barra';
-    if (d === 5) return 'está la cuenta del cielo';
-    if (d > 5) return `está la cuenta del cielo y ${cuentas(d - 5)} de tierra`;
-    return `hay ${cuentas(d)} de tierra`;
+    if (d === 0) return 'ninguna bolita toca la barra';
+    if (d === 5) return 'está la bolita de arriba';
+    if (d > 5) return `está la bolita de arriba y ${bolitas(d - 5)} de abajo`;
+    return `hay ${bolitas(d)} de abajo`;
   }
 
   // Cómo leer un número, varilla por varilla.

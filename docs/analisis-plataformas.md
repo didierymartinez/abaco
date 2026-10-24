@@ -153,7 +153,26 @@ La primera vez en un nivel se hacen los tres pasos. Las siguientes sesiones van 
 4. **Barra inferior con solo cuatro lugares:** Camino, Logros, Ábaco y Padres. Imprimir y caligrafía pasan al área de padres.
 5. **Estilo moderno:** fuentes Baloo 2 y Nunito, tarjetas blancas con sombras suaves, botones con relieve, cielo con nubes y un ábaco azul marino con cuentas naranjas y azules. Mapi pasa a ser un mapache dibujado en SVG en lugar del emoji.
 
-## 8. Ideas para siguientes versiones
+## 8. Uso real y juegos de concentración
+
+**Lo que funcionó con la niña:**
+- La alternancia entre hacerlo en el ábaco físico y responder en el celular.
+- La hoja impresa, que refuerza lo aprendido.
+
+**Explicaciones más claras.** En español «cuenta» es la pieza del ábaco y también el verbo contar. Frases como «¿Qué cuentas cuentan?» o «Cuenta las cuentas» confundían. Ahora las piezas se llaman **bolitas** («la bolita de arriba vale 5», «las bolitas de abajo valen 1») y el verbo es «valen». «Cielo» y «tierra» se mencionan una sola vez, en la primera lección.
+
+**Juegos para la concentración y la motivación (7 años).** Se abren solo después de practicar ese día, como el Mundo Virtual de Smartick, para que sean un premio y no un atajo. El ajuste está en Padres. Al terminar la sesión o la hoja aparece «🎮 ¡Hora del juego!», y cada día se sugiere uno.
+
+| Juego | Qué entrena | Cómo se adapta |
+|---|---|---|
+| Tabla de Schulte | Atención visual sostenida y búsqueda rápida | 3×3 → 4×4 → 5×5 cuando consigue 3 estrellas por tiempo |
+| Recuerda el número | Memoria de trabajo (secuencia de cifras) | Empieza con 2 cifras, suma 1 por acierto y termina con 2 fallos seguidos |
+| Recuerda el ábaco | Visualizar el ábaco (base del anzan) | Solo números que ya sabe leer: 0–4, 0–5, 0–9, luego 2 y 3 cifras; sube tras 2 aciertos |
+| Luces en orden (Corsi) | Memoria visoespacial | De 2 luces en adelante; dos intentos por longitud |
+
+Cada juego tiene la explicación de Mapi antes de jugar, estrellas, récords y medallas: «A jugar», «Ojo de águila» (Schulte 4×4), «Memoria de elefante» (5 cifras) y «Camino de luces» (5 luces).
+
+## 9. Ideas para siguientes versiones
 
 - **Evaluación inicial** al estilo Smartick o la «recomendación» de Supercerebros, para elegir el nivel de inicio automáticamente.
 - **Adaptación dentro de la sesión**: si falla dos seguidos, intercalar un ejercicio del nivel anterior.

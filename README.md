@@ -9,12 +9,19 @@ Todo es **evolutivo**. La ruta empieza por conocer el ábaco y contar, y cada ni
 2. **🤝 Juntos:** ella hace 3 ejercicios en su ábaco siguiendo cada paso con Mapi.
 3. **⭐ Tú:** practica sin ayuda. Solo esta parte cuenta para subir de nivel.
 
-La app tiene cuatro secciones en la barra inferior:
+La app tiene cinco secciones en la barra inferior:
 
 - 🗺️ **Camino (inicio):**
   - La tarjeta «Continuar» muestra el nivel actual y el estado de sus tres pasos. La lección siempre va antes de practicar.
   - Debajo está el mapa de la ruta: niveles superados con ✓ y estrellas, el nivel actual resaltado y los siguientes bloqueados.
   - También muestra la racha de la semana. Cuando ya vio la lección, puede hacer la práctica en papel con cronómetro y corrección.
+- 🎮 **Juegos:** cuatro juegos de concentración y memoria que se abren como premio después de practicar ese día (en pantalla o con la hoja):
+  - **Tabla de Schulte:** tocar los números en orden. Empieza en 3×3 y crece a 4×4 y 5×5.
+  - **Recuerda el número:** ver un número unos segundos y escribirlo. Agrega una cifra cada vez que acierta.
+  - **Recuerda el ábaco:** ver el ábaco un momento y decir qué número era. Solo usa números que ya sabe leer.
+  - **Luces en orden** (bloques de Corsi): repetir el orden en que se encienden las luces.
+
+  Cada juego tiene la explicación de Mapi, estrellas y récords.
 - 🏅 **Logros:** estrellas, racha, sesiones y un álbum de medallas: primera lección, sesión perfecta, rachas y una por cada módulo terminado.
 - 🧮 **Ábaco:** ábaco libre para jugar, y «¿Cómo se hace?» para ver paso a paso cualquier suma o resta.
 - 👨‍👩‍👧 **Padres** (con una multiplicación para entrar):
@@ -63,5 +70,6 @@ Con internet, la app siempre pide la versión actual. Al detectar una versión n
 | `js/curriculum.js` | 25 niveles en 8 módulos con sus lecciones, generadores de ejercicios con semilla y pasos para enseñar, guiar y explicar |
 | `js/soroban.js` | Soroban en SVG: tocar o deslizar las cuentas, flechas del teclado |
 | `js/caligrafia.js` | Trazos de los números 0–9 con su orden, para las hojas de caligrafía |
+| `js/juegos.js` | Los cuatro juegos de concentración (Schulte, memoria de cifras, flash del ábaco y Corsi), adaptativos |
 | `js/app.js` | Lógica de la app: mapa de progreso, sesión con ayuda «?», estrellas y medallas, Mapi y su voz, práctica en papel, impresión y padres |
 | `manifest.webmanifest`, `sw.js`, `icons/` | App instalable y sin conexión |

@@ -227,6 +227,58 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focu
 }
 .node-start::after { content: ''; position: absolute; left: 50%; bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--accent); }
 
+/* Juegos */
+.games { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.game-card {
+  position: relative; display: flex; align-items: center; gap: 14px; text-align: left; border: 0; cursor: pointer;
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; font: inherit; color: var(--ink);
+}
+.game-card:active { transform: translateY(2px); }
+.game-card.is-today { box-shadow: var(--shadow), inset 0 0 0 3px var(--accent); }
+.game-card.is-locked { opacity: .6; }
+.game-card.is-locked .game-icon { filter: grayscale(1); }
+.game-icon { flex: none; width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; font-size: 2.1rem; background: var(--primary-soft); }
+.game-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.game-name { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.2rem; line-height: 1.1; }
+.game-short { color: var(--muted); font-weight: 600; font-size: .92rem; }
+.game-record { color: var(--primary-dark); font-weight: 800; font-size: .85rem; }
+.game-badge { position: absolute; top: 10px; right: 12px; background: var(--accent); color: #fff; border-radius: 999px; padding: 2px 10px; font-size: .78rem; font-weight: 800; }
+.game-title { flex: 1; margin: 0; font-size: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#game-status:empty { display: none; }
+.game-hero { font-size: 5rem; line-height: 1; margin-bottom: 8px; }
+.game-target { font-family: 'Baloo 2', sans-serif; font-size: clamp(1.4rem, 4.5vh, 2rem); font-weight: 800; color: var(--primary-dark); margin: 0 0 10px; }
+.game-new-record { font-weight: 800; color: var(--accent-dark); font-size: 1.2rem; }
+.game-result-text { font-size: 1.15rem; margin: 6px 0 4px; }
+.game-call { margin: 14px 0 0; }
+
+/* Tabla de Schulte */
+.schulte { display: grid; gap: 8px; width: 100%; max-width: min(420px, 52vh); aspect-ratio: 1; }
+.schulte.s3 { grid-template-columns: repeat(3, 1fr); }
+.schulte.s4 { grid-template-columns: repeat(4, 1fr); }
+.schulte.s5 { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.schulte-cell {
+  border: 0; border-radius: 16px; background: #fff; box-shadow: inset 0 0 0 2px var(--line), 0 4px 0 var(--line);
+  font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.4rem, 5vh, 2.4rem); color: var(--ink); cursor: pointer; touch-action: manipulation;
+}
+.schulte.s5 .schulte-cell { font-size: clamp(1.1rem, 4vh, 1.8rem); border-radius: 12px; }
+.schulte-cell.is-found { background: var(--success-soft); color: var(--success-dark); box-shadow: inset 0 0 0 2px #bfeedd; }
+.schulte-cell.is-wrong { animation: shake .35s ease; background: var(--danger-soft); }
+
+/* Recuerda el número / el ábaco */
+.memory-number { font-family: 'Baloo 2', sans-serif; font-size: clamp(3rem, 12vh, 5.5rem); font-weight: 800; letter-spacing: .08em; color: var(--primary); margin: 0 0 10px; }
+.memory-number.is-hidden { color: var(--locked); }
+.game-abacus { transition: opacity .25s; }
+.game-abacus.is-hidden { opacity: 0; }
+
+/* Luces en orden (Corsi) */
+.corsi { position: relative; width: 100%; max-width: min(420px, 52vh); aspect-ratio: 1; background: #f4f7fc; border-radius: var(--radius); }
+.corsi-block {
+  position: absolute; width: 18%; aspect-ratio: 1; border: 0; border-radius: 22%; cursor: pointer; touch-action: manipulation;
+  background: #fff; box-shadow: inset 0 0 0 3px var(--line), 0 5px 0 var(--line); transition: background .12s, transform .12s;
+}
+.corsi.is-showing .corsi-block { cursor: default; }
+.corsi-block.is-on { background: var(--accent); box-shadow: 0 5px 0 var(--accent-dark), 0 0 0 8px rgba(255, 159, 28, .25); transform: scale(1.06); }
+
 /* Logros */
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
 .stats div { background: var(--card); border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; box-shadow: var(--shadow); }
