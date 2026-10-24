@@ -23,9 +23,10 @@
       avatar: '🐼',
       levelId: C.LEVELS[0].id,
       levelStart: 0,
-      settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true, gamesLock: true },
+      settings: { perSession: 10, sound: true, rtl: true, labels: true, abacus: 'real', voice: true, gamesLock: true, dictation: 'auto' },
       lessons: {},
       games: { log: [] },
+      dictations: [],
       levelStars: {},
       stars: 0,
       history: []
@@ -91,7 +92,7 @@
 
   // Racha actual: días seguidos con sesión que terminan hoy (o ayer, si hoy aún no ha practicado).
   function streakInfo() {
-    const days = new Set(data.history.map(h => h.date));
+    const days = new Set(data.history.map(h => h.date).concat((data.dictations || []).map(d => d.date)));
     let current = 0;
     let day = today();
     if (!days.has(day)) day = addDays(day, -1);
@@ -289,7 +290,7 @@
     document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'view-' + view; });
     document.body.classList.toggle('in-session', view === 'session' || view === 'game');
     $('print-sheets').hidden = view !== 'print';
-    const tab = { home: 'home', games: 'games', awards: 'awards', abacus: 'abacus', parents: 'parents', print: 'parents', paper: 'home', result: 'home' }[view];
+    const tab = { home: 'home', dictation: 'home', games: 'games', awards: 'awards', abacus: 'abacus', parents: 'parents', print: 'parents', paper: 'home', result: 'home' }[view];
     document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
     window.scrollTo(0, 0);
     if (view === 'home') renderHome();
@@ -299,6 +300,7 @@
     if (view === 'awards') renderAwards();
     if (view === 'paper') renderPaper();
     if (view === 'games') renderGames();
+    if (view === 'dictation') renderDictation();
   }
 
   document.addEventListener('click', e => {
@@ -1342,7 +1344,7 @@
 
   function syncPrintKind() {
     const kind = $('print-kind').value;
-    document.querySelectorAll('#view-print [data-kind]').forEach(n => { n.hidden = n.dataset.kind !== kind; });
+    document.querySelectorAll('#view-print [data-kind]').forEach(n => { n.hidden = !n.dataset.kind.split(' ').includes(kind); });
   }
 
   ['print-kind', 'print-level', 'print-start', 'print-pages', 'print-answers', 'print-warmup', 'print-digit'].forEach(id => {
@@ -1362,10 +1364,22 @@
       }
       return;
     }
-    const levelId = $('print-level').value;
-    const level = C.getLevel(levelId);
     const start = $('print-start').value || today();
     const pages = Math.min(14, Math.max(1, parseInt($('print-pages').value, 10) || 1));
+    if ($('print-kind').value === 'dictado') {
+      const digits = dictationDigits();
+      const keys = [];
+      for (let p = 0; p < pages; p++) {
+        const date = addDays(start, p);
+        const numbers = dictationNumbers(date, digits);
+        keys.push({ date, exercises: numbers.map(n => ({ answer: n })) });
+        box.appendChild(buildDictationSheet(date, p + 1, numbers.length, digits));
+      }
+      if ($('print-answers').checked) box.appendChild(buildAnswerSheet({ id: '👂', name: 'Dictado de números' }, keys));
+      return;
+    }
+    const levelId = $('print-level').value;
+    const level = C.getLevel(levelId);
     const keys = [];
     for (let p = 0; p < pages; p++) {
       const date = addDays(start, p);
@@ -1611,6 +1625,239 @@
   $('demo-start').addEventListener('click', startDemo);
   $('demo-prev').addEventListener('click', () => { if (demo.i > 0) { demo.i--; showDemoStep(); } });
   $('demo-next').addEventListener('click', () => { if (demo.i < demo.steps.length - 1) { demo.i++; showDemoStep(); } });
+
+  /* ---------- Dictado de números en papel ---------- */
+
+  const DICTATION_COUNT = 12;
+  let dict = null;
+
+  // Cifras del dictado: según la ruta (unidades → decenas → centenas) o lo que elijan los padres.
+  function dictationDigits() {
+    const fixed = parseInt(data.settings.dictation, 10);
+    if (fixed) return fixed;
+    const i = C.levelIndex(data.levelId);
+    if (i < C.levelIndex('A6')) return 1;
+    if (i < C.levelIndex('A8')) return 2;
+    return 3;
+  }
+
+  function dictationRangeText(digits) {
+    return digits === 1 ? 'del 0 al 9' : digits === 2 ? 'hasta el 99' : 'hasta el 999';
+  }
+
+  // Los mismos números en la hoja de respuestas impresa y en la app ese día.
+  // Con una cifra salen los diez dígitos (y dos de repaso).
+  function dictationNumbers(date, digits) {
+    const rng = C.makeRng(`${date}|dictado|${digits}`);
+    const pool = digits === 1 ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : [];
+    const out = [];
+    const shuffled = pool.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(rng.next() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    out.push(...shuffled);
+    const lo = digits === 1 ? 0 : 10 ** (digits - 1);
+    const hi = 10 ** digits - 1;
+    while (out.length < DICTATION_COUNT) {
+      const n = rng.int(lo, hi);
+      if (out[out.length - 1] === n || (digits > 1 && out.includes(n))) continue;
+      out.push(n);
+    }
+    return out;
+  }
+
+  // El dictado siempre se escucha, aunque la voz de Mapi esté apagada en el resto de la app.
+  function sayAlways(text) {
+    const was = data.settings.voice;
+    data.settings.voice = true;
+    say(text);
+    data.settings.voice = was;
+  }
+
+  function hasSpanishVoice() {
+    return 'speechSynthesis' in window && spanishVoices().length > 0;
+  }
+
+  function setDictationStage(stage) {
+    $('dict-intro').hidden = stage !== 'intro';
+    $('dict-run').hidden = stage !== 'run';
+    $('dict-check').hidden = stage !== 'check';
+  }
+
+  function renderDictation() {
+    const digits = dictationDigits();
+    dict = null;
+    setDictationStage('intro');
+    $('dict-range').textContent = `Hoy: ${DICTATION_COUNT} números ${dictationRangeText(digits)}. Usa la hoja de dictado o cualquier hoja con 12 casillas.`;
+    $('dict-novoice').hidden = hasSpanishVoice();
+    $('dict-bubble').textContent = 'Yo digo un número y tú lo escribes con tu mejor letra, en la casilla que te diga. Si no lo escuchas bien, toca «Repetir».';
+    $('dict-bubble').className = 'bubble';
+  }
+
+  $('dictation-start').addEventListener('click', () => show('dictation'));
+
+  $('dict-print').addEventListener('click', () => {
+    const box = $('print-sheets');
+    box.innerHTML = '';
+    box.appendChild(buildDictationSheet(today(), 1, DICTATION_COUNT, dictationDigits()));
+    window.print();
+  });
+
+  $('dict-go').addEventListener('click', () => {
+    const digits = dictationDigits();
+    dict = { digits, numbers: dictationNumbers(today(), digits), i: 0, start: Date.now(), wrong: new Set() };
+    setDictationStage('run');
+    $('dict-novoice').hidden = hasSpanishVoice();
+    dictateCurrent();
+  });
+
+  function dictateCurrent() {
+    const i = dict.i;
+    const n = dict.numbers[i];
+    $('dict-count').textContent = `Número ${i + 1} de ${dict.numbers.length}`;
+    $('dict-slot').textContent = `(${i + 1})`;
+    $('dict-reveal').hidden = true;
+    const progress = $('dict-progress');
+    progress.innerHTML = '';
+    dict.numbers.forEach((_, k) => {
+      const li = document.createElement('li');
+      li.className = k < i ? 'is-ok' : k === i ? 'is-current' : '';
+      progress.appendChild(li);
+    });
+    $('dict-next').textContent = i === dict.numbers.length - 1 ? '¡Terminé! ▶' : 'Siguiente ▶';
+    $('dict-bubble').textContent = `Casilla (${i + 1}): escucha bien…`;
+    $('dict-bubble').className = 'bubble';
+    sayAlways(`Casilla ${i + 1}. Escribe el ${n}. Otra vez: el ${n}.`);
+  }
+
+  $('dict-repeat').addEventListener('click', () => { if (dict) sayAlways(String(dict.numbers[dict.i])); });
+
+  $('dict-show').addEventListener('click', () => {
+    if (!dict) return;
+    $('dict-reveal').textContent = dict.numbers[dict.i];
+    $('dict-reveal').hidden = false;
+  });
+
+  $('dict-next').addEventListener('click', () => {
+    if (!dict) return;
+    dict.i++;
+    if (dict.i < dict.numbers.length) { dictateCurrent(); return; }
+    dict.seconds = Math.max(1, Math.round((Date.now() - dict.start) / 1000));
+    setDictationStage('check');
+    renderDictationCheck();
+    mapi('dict-bubble', '¡Terminaste! Ahora compara tu hoja con los números. Toca los que estén mal.');
+  });
+
+  function renderDictationCheck() {
+    const list = $('dict-list');
+    list.innerHTML = '';
+    dict.numbers.forEach((n, i) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.appendChild(textSpan(`(${i + 1})`));
+      const right = document.createElement('span');
+      const num = document.createElement('b');
+      num.textContent = n;
+      right.appendChild(num);
+      right.appendChild(textSpan(' ✓', 'mark'));
+      b.appendChild(right);
+      b.addEventListener('click', () => {
+        if (dict.wrong.has(i)) dict.wrong.delete(i);
+        else dict.wrong.add(i);
+        b.classList.toggle('is-wrong', dict.wrong.has(i));
+        b.querySelector('.mark').textContent = dict.wrong.has(i) ? ' ✗' : ' ✓';
+        updateDictationScore();
+      });
+      li.appendChild(b);
+      list.appendChild(li);
+    });
+    updateDictationScore();
+  }
+
+  function updateDictationScore() {
+    const total = dict.numbers.length;
+    $('dict-score').textContent = `${total - dict.wrong.size} de ${total} bien`;
+  }
+
+  $('dict-save').addEventListener('click', () => {
+    if (!dict) return;
+    const total = dict.numbers.length;
+    const correct = total - dict.wrong.size;
+    const before = new Set(wonBadges().map(b => b.id));
+    const stars = starsFor(correct, total);
+    data.dictations = (data.dictations || []).concat({ date: today(), at: Date.now(), digits: dict.digits, correct, total, seconds: dict.seconds }).slice(-200);
+    data.stars = (data.stars || 0) + stars;
+    save();
+    const fresh = wonBadges().filter(b => !before.has(b.id));
+    const wrongNumbers = [...dict.wrong].sort((a, b) => a - b).map(i => dict.numbers[i]);
+    const title = stars === 3 ? '¡Increíble!' : stars === 2 ? '¡Muy bien!' : '¡Buen trabajo!';
+    const message = wrongNumbers.length
+      ? `Dictado de números ${dictationRangeText(dict.digits)}. Repasa con lápiz: ${wrongNumbers.join(', ')}.`
+      : `Dictado de números ${dictationRangeText(dict.digits)}. ¡Todos bien escritos!`;
+    $('result-stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+    $('result-title').textContent = title;
+    $('result-score').textContent = `${correct}/${total}`;
+    $('result-time').textContent = formatTime(dict.seconds);
+    $('result-streak').textContent = streakInfo().current;
+    $('result-level').textContent = message;
+    const badgesBox = $('result-badges');
+    badgesBox.innerHTML = '';
+    fresh.forEach(b => badgesBox.appendChild(badgeCard(b, true, '¡Nueva medalla!')));
+    $('result-more').hidden = true;
+    $('result-game').hidden = false;
+    $('result-home').className = 'btn btn-soft';
+    dict = null;
+    show('result');
+    say(`${title} ${correct} de ${total}. ${message}` + (fresh.length ? ` ¡Ganaste la medalla ${fresh[0].name}!` : '') + ' ¡Y ahora, hora del juego!');
+    soundWin();
+    confetti(stars === 3 ? 60 : 25);
+  });
+
+  // Hoja de dictado: solo casillas con renglón de caligrafía; los números los dice Mapi.
+  function buildDictationSheet(date, n, count, digits) {
+    const sheet = document.createElement('article');
+    sheet.className = 'sheet';
+    sheet.appendChild(sheetHeader('👂', `Dictado de números (${dictationRangeText(digits)})`, date, `hoja ${n}`));
+    const instruction = document.createElement('p');
+    instruction.className = 'sheet-instruction';
+    instruction.textContent = '◆ Escucha a Mapi y escribe cada número en su casilla, con tu mejor letra.';
+    sheet.appendChild(instruction);
+    const grid = document.createElement('div');
+    grid.className = `dict-grid d${digits}`;
+    for (let i = 0; i < count; i++) {
+      const item = document.createElement('div');
+      item.className = 'dict-item';
+      item.appendChild(textSpan(`(${i + 1})`, 'sheet-num'));
+      const cells = document.createElement('div');
+      cells.className = 'dict-cells';
+      for (let d = 0; d < digits; d++) cells.appendChild(K.cellSvg(null, 'vacio'));
+      item.appendChild(cells);
+      grid.appendChild(item);
+    }
+    sheet.appendChild(grid);
+    const practice = document.createElement('p');
+    practice.className = 'sheet-instruction';
+    practice.textContent = '◆ Escribe otra vez, con calma, los números que te costaron:';
+    sheet.appendChild(practice);
+    const row = document.createElement('div');
+    row.className = 'dict-practice';
+    for (let k = 0; k < 9; k++) row.appendChild(K.cellSvg(null, 'vacio'));
+    sheet.appendChild(row);
+    const foot = document.createElement('footer');
+    foot.className = 'sheet-foot';
+    foot.textContent = `Aciertos: ______ / ${count}      ·      Mi Ábaco`;
+    sheet.appendChild(foot);
+    return sheet;
+  }
+
+  $('tile-dictado').addEventListener('click', () => {
+    show('print');
+    $('print-kind').value = 'dictado';
+    syncPrintKind();
+    buildSheets();
+  });
 
   /* ---------- Juegos de concentración ---------- */
 
@@ -1863,6 +2110,8 @@
       { id: 'racha7', icon: '🔥', name: 'Una semana', desc: 'Practicar 7 días seguidos', won: (d, s) => s.best >= 7 },
       { id: 'racha30', icon: '🏆', name: 'Un mes', desc: 'Practicar 30 días seguidos', won: (d, s) => s.best >= 30 },
       { id: 'estrellas50', icon: '🌟', name: '50 estrellas', desc: 'Juntar 50 estrellas', won: d => (d.stars || 0) >= 50 },
+      { id: 'dictado1', icon: '👂', name: 'Buen oído', desc: 'Terminar un dictado de números', won: d => (d.dictations || []).length >= 1 },
+      { id: 'dictado10', icon: '✍️', name: 'Mano firme', desc: 'Terminar 10 dictados', won: d => (d.dictations || []).length >= 10 },
       { id: 'juego1', icon: '🎮', name: 'A jugar', desc: 'Terminar un juego de concentración', won: d => (d.games.log || []).length >= 1 },
       { id: 'schulte4', icon: '🦅', name: 'Ojo de águila', desc: 'Terminar la tabla de Schulte de 4×4', won: d => d.games.schulte.best[4] !== undefined },
       { id: 'memoria5', icon: '🐘', name: 'Memoria de elefante', desc: 'Recordar un número de 5 cifras', won: d => (d.games.span.best[5] || 0) >= 1 },
@@ -1935,6 +2184,11 @@
     $('set-voice-rate').value = String(data.settings.voiceRate || 0.95);
     $('set-sound').checked = data.settings.sound;
     $('set-games-lock').checked = data.settings.gamesLock;
+    $('set-dictation').value = data.settings.dictation || 'auto';
+    const dl = (data.dictations || []).slice(-5);
+    $('dictation-progress').textContent = dl.length
+      ? `Dictados: ${(data.dictations || []).length} en total · últimos: ${dl.map(d => `${d.correct}/${d.total}`).join(', ')} · hoy toca ${dictationRangeText(dictationDigits())}.`
+      : `Dictados: todavía ninguno · toca ${dictationRangeText(dictationDigits())}.`;
     $('games-progress').textContent = 'Juegos · ' + J.GAMES.map(g => {
       const st = data.games[g.id];
       const last = J.recent(st, 3).map(p => g.scoreText(p.score)).join(', ');
@@ -2027,6 +2281,7 @@
   });
   $('set-sound').addEventListener('change', e => { data.settings.sound = e.target.checked; save(); });
   $('set-games-lock').addEventListener('change', e => { data.settings.gamesLock = e.target.checked; save(); });
+  $('set-dictation').addEventListener('change', e => { data.settings.dictation = e.target.value; save(); renderParents(); });
   $('set-rtl').addEventListener('change', e => { data.settings.rtl = e.target.checked; save(); });
   $('set-labels').addEventListener('change', e => { data.settings.labels = e.target.checked; save(); });
 

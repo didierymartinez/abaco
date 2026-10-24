@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Mi Ábaco">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap">
-  <link rel="stylesheet" href="css/app.css?v=9">
+  <link rel="stylesheet" href="css/app.css?v=10">
 </head>
 <body>
   <!-- Mapi, la mascota: un mapache dibujado en SVG que se reutiliza en toda la app -->
@@ -78,6 +78,15 @@
         <button class="btn btn-primary btn-block btn-xl" id="start-session" type="button">Continuar</button>
         <button class="btn btn-ghost btn-block" id="paper-start" type="button">📄 Hacer la práctica en papel</button>
         <p class="why" id="today-why"></p>
+      </div>
+
+      <div class="card activity-card">
+        <span class="activity-icon" aria-hidden="true">✏️</span>
+        <div class="activity-text">
+          <h3>Dictado de números</h3>
+          <p class="muted">Mapi dice un número y tú lo escribes en tu hoja.</p>
+        </div>
+        <button class="btn btn-soft" id="dictation-start" type="button">Empezar</button>
       </div>
 
       <div class="card week-card">
@@ -312,6 +321,51 @@
       </div>
     </section>
 
+    <!-- Dictado de números en papel -->
+    <section class="view" id="view-dictation" hidden>
+      <div class="view-head">
+        <button class="icon-btn" data-go="home" type="button" aria-label="Volver">←</button>
+        <h1>Dictado de números</h1>
+      </div>
+      <div class="card">
+        <div class="guide">
+          <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#mapi"/></svg>
+          <p class="bubble" id="dict-bubble"></p>
+        </div>
+      </div>
+
+      <div class="card" id="dict-intro">
+        <h2>Prepara tu hoja y tu lápiz</h2>
+        <p class="muted" id="dict-range"></p>
+        <div class="row">
+          <button class="btn btn-soft" id="dict-print" type="button">🖨️ Imprimir la hoja de dictado</button>
+          <button class="btn btn-primary btn-xl" id="dict-go" type="button">▶ Empezar</button>
+        </div>
+        <p class="suggestion" id="dict-novoice" hidden>Este dispositivo no tiene voz en español. Un adulto puede dictar tocando «👁 Ver número».</p>
+      </div>
+
+      <div class="card center-text" id="dict-run" hidden>
+        <ol class="progress dict-progress" id="dict-progress" aria-label="Progreso"></ol>
+        <p class="eyebrow" id="dict-count"></p>
+        <div class="dict-ear" aria-hidden="true">👂</div>
+        <p class="dict-hint">Escucha y escríbelo en la casilla <b id="dict-slot"></b> de tu hoja.</p>
+        <p class="dict-reveal" id="dict-reveal" hidden></p>
+        <div class="row center">
+          <button class="btn btn-soft" id="dict-repeat" type="button">🔊 Repetir</button>
+          <button class="btn btn-primary btn-xl" id="dict-next" type="button">Siguiente ▶</button>
+        </div>
+        <button class="btn btn-ghost" id="dict-show" type="button">👁 Ver número (adulto)</button>
+      </div>
+
+      <div class="card" id="dict-check" hidden>
+        <h2>A corregir</h2>
+        <p class="muted">Compara tu hoja con estos números. Toca los que estén equivocados o mal escritos.</p>
+        <ol class="paper-list" id="dict-list"></ol>
+        <p class="paper-score" id="dict-score"></p>
+        <button class="btn btn-primary" id="dict-save" type="button">Guardar</button>
+      </div>
+    </section>
+
     <!-- Imprimir (desde Padres) -->
     <section class="view" id="view-print" hidden>
       <div class="view-head">
@@ -324,11 +378,12 @@
             <select id="print-kind">
               <option value="nivel">Ejercicios del nivel</option>
               <option value="caligrafia">Caligrafía de números</option>
+              <option value="dictado">Dictado de números</option>
             </select>
           </label>
           <label data-kind="nivel">Nivel <select id="print-level"></select></label>
-          <label data-kind="nivel">Desde el día <input type="date" id="print-start"></label>
-          <label data-kind="nivel">Hojas (1 por día) <input type="number" id="print-pages" min="1" max="14" value="5"></label>
+          <label data-kind="nivel dictado">Desde el día <input type="date" id="print-start"></label>
+          <label data-kind="nivel dictado">Hojas (1 por día) <input type="number" id="print-pages" min="1" max="14" value="5"></label>
           <label data-kind="caligrafia" hidden>Número
             <select id="print-digit">
               <option value="all">Todos (0 al 9)</option>
@@ -337,9 +392,10 @@
             </select>
           </label>
         </div>
-        <label class="check" data-kind="nivel"><input type="checkbox" id="print-answers" checked> Incluir hoja de respuestas</label>
+        <label class="check" data-kind="nivel dictado"><input type="checkbox" id="print-answers" checked> Incluir hoja de respuestas</label>
         <label class="check" data-kind="nivel"><input type="checkbox" id="print-warmup" checked> Empezar cada hoja con una fila de caligrafía</label>
         <p class="muted" data-kind="nivel">Imprime solo niveles cuya lección ya vio en la app. La hoja de cada día tiene los mismos ejercicios que la sesión en pantalla de ese día.</p>
+        <p class="muted" data-kind="dictado" hidden>La hoja solo tiene casillas: los números los dice Mapi en «Dictado de números». La hoja de respuestas tiene los números de cada día.</p>
         <div class="row">
           <button class="btn btn-primary" id="print-go" type="button">🖨️ Imprimir</button>
         </div>
@@ -366,6 +422,7 @@
           <div class="row">
             <button class="btn btn-primary" data-go="print" type="button">🖨️ Hojas del nivel</button>
             <button class="btn btn-soft" id="tile-caligrafia" type="button">✏️ Hojas de caligrafía</button>
+            <button class="btn btn-soft" id="tile-dictado" type="button">👂 Hojas de dictado</button>
           </div>
         </div>
 
@@ -375,6 +432,7 @@
           <p class="why" id="route-rule"></p>
           <p class="muted" id="level-progress"></p>
           <p class="muted" id="games-progress"></p>
+          <p class="muted" id="dictation-progress"></p>
           <p class="suggestion" id="level-suggestion" hidden></p>
         </div>
 
@@ -416,6 +474,16 @@
             </details>
           </div>
           <label class="check"><input type="checkbox" id="set-sound"> Sonidos</label>
+          <div class="form-grid">
+            <label>Números del dictado
+              <select id="set-dictation">
+                <option value="auto">Automático según su nivel</option>
+                <option value="1">Del 0 al 9</option>
+                <option value="2">Hasta el 99</option>
+                <option value="3">Hasta el 999</option>
+              </select>
+            </label>
+          </div>
           <label class="check"><input type="checkbox" id="set-games-lock"> Los juegos se abren después de practicar ese día (recomendado)</label>
           <label class="check"><input type="checkbox" id="set-rtl"> Con teclado, en sumas en columna, escribir la respuesta de derecha a izquierda (unidades primero)</label>
           <label class="check"><input type="checkbox" id="set-labels"> Mostrar U, D, C debajo del ábaco</label>
@@ -467,10 +535,10 @@
     <button type="button" data-go="parents" data-tab="parents"><span aria-hidden="true">👨‍👩‍👧</span>Padres</button>
   </nav>
 
-  <script src="js/curriculum.js?v=9"></script>
-  <script src="js/soroban.js?v=9"></script>
-  <script src="js/caligrafia.js?v=9"></script>
-  <script src="js/juegos.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/curriculum.js?v=10"></script>
+  <script src="js/soroban.js?v=10"></script>
+  <script src="js/caligrafia.js?v=10"></script>
+  <script src="js/juegos.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>

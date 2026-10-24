@@ -178,6 +178,19 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focu
 .steps li.is-current { background: var(--primary-soft); color: var(--primary-dark); box-shadow: inset 0 0 0 2px var(--primary); }
 .steps.big { width: 100%; max-width: 520px; margin: 6px auto 10px; }
 
+/* Actividad extra del inicio (dictado) */
+.activity-card { display: flex; align-items: center; gap: 14px; padding: 14px 18px; }
+.activity-icon { width: 52px; height: 52px; flex: none; display: grid; place-items: center; font-size: 1.7rem; border-radius: 16px; background: var(--accent-soft); }
+.activity-text { flex: 1; min-width: 0; }
+.activity-text h3 { margin: 0 0 2px; }
+.activity-text p { margin: 0; }
+
+/* Dictado en pantalla: solo se escucha, el número se escribe en la hoja */
+.dict-progress { margin: 0 0 14px; }
+.dict-ear { font-size: 4.5rem; line-height: 1; margin: 8px 0; }
+.dict-hint { font-size: 1.15rem; font-weight: 700; }
+.dict-reveal { font-size: 3rem; font-weight: 800; color: var(--primary-dark); margin: 4px 0; }
+
 /* Semana */
 .week-card { padding: 16px 20px; }
 .week-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
@@ -551,6 +564,16 @@ body.in-session .tabbar { display: none; }
 .answers h3 { font-size: 1rem; margin-bottom: 4px; }
 .answers ol { columns: 5; margin: 0; padding-left: 28px; }
 
+/* Hoja de dictado: 12 casillas para escribir y una fila para repasar */
+.dict-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 10px 16px; min-height: 0; margin-bottom: 12px; }
+.dict-item { display: flex; gap: 6px; align-items: center; min-height: 0; }
+.dict-item .sheet-num { min-width: 2.3em; padding: 0; }
+.dict-cells { display: flex; gap: 3px; height: 72px; }
+.dict-grid.d1 .dict-cells { height: 96px; }
+.dict-grid.d2 .dict-cells { height: 88px; }
+.dict-cells .cal-cell, .dict-practice .cal-cell { height: 100%; width: auto; flex: none; border: 1.5px solid #9fb0c2; border-radius: 6px; }
+.dict-practice { display: flex; gap: 6px; height: 64px; }
+
 /* Computador y tableta en horizontal: ejercicio a la izquierda, teclado a la derecha */
 @media (min-width: 860px) {
   .session-main { flex-direction: row; align-items: stretch; gap: 20px; }
@@ -583,6 +606,9 @@ body.in-session .tabbar { display: none; }
   .sheet .op-inline, .sheet .op-column { font-size: 1.3rem; }
   .sheet-head { flex-direction: column; }
   .sheet-fields { min-width: 0; }
+  .dict-grid { grid-template-columns: 1fr 1fr; }
+  .dict-grid .dict-cells, .dict-grid.d1 .dict-cells, .dict-grid.d2 .dict-cells { height: 56px; }
+  .dict-practice { height: 44px; gap: 3px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -604,4 +630,8 @@ body.in-session .tabbar { display: none; }
   .sheet .op-inline, .sheet .op-column { font-size: 22pt; }
   .sheet-abacus { max-height: 34mm; }
   .sheet-warmup .cal-cell { height: 19mm; }
+  .dict-cells { height: 22mm; }
+  .dict-grid.d1 .dict-cells { height: 30mm; }
+  .dict-grid.d2 .dict-cells { height: 28mm; }
+  .dict-practice { height: 19mm; }
 }

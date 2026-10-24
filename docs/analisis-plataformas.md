@@ -179,12 +179,22 @@ La primera vez en un nivel se hacen los tres pasos. Las siguientes sesiones van 
 
 Cada juego tiene la explicación de Mapi antes de jugar, estrellas, récords y medallas: «A jugar», «Ojo de águila» (Schulte 4×4), «Memoria de elefante» (5 cifras) y «Camino de luces» (5 luces).
 
-## 9. Ideas para siguientes versiones
+## 9. Dictado de números en papel
+
+En Kumon y en la escuela, el dictado une tres cosas: escuchar el número, reconocer su forma y escribirlo bien. Aquí completa la caligrafía, que hasta ahora solo se practicaba copiando un modelo.
+
+- **Cómo funciona:** en el inicio está la tarjeta «Dictado de números». Mapi dice «Casilla 3. Escribe el 7. Otra vez: el 7.», y ella lo escribe con lápiz en esa casilla de su hoja. Puede tocar «Repetir» las veces que quiera, y avanza con «Siguiente» a su ritmo. En pantalla nunca ve el número: solo escucha.
+- **La hoja:** 12 casillas con renglón de caligrafía (una por cifra) y una fila para repasar con calma los números que le costaron. Se imprime desde el dictado o desde Padres, varios días con hoja de respuestas.
+- **Los números:** son evolutivos y siguen la ruta. Mientras aprende las unidades, salen del 0 al 9 (los diez dígitos en desorden y dos de repaso). Desde las decenas (A6) salen hasta el 99, y desde las centenas (A8) hasta el 999. En Padres se puede fijar 1, 2 o 3 cifras. Cada día tiene sus números, así que la hoja de respuestas impresa coincide con lo que dicta Mapi ese día.
+- **Corrección:** al terminar, la app muestra los 12 números. Ella (o un adulto) compara con su hoja y toca los que estén equivocados o mal escritos. Se guardan los aciertos y el tiempo, y gana estrellas. Mapi le dice cuáles repasar con lápiz.
+- **Motivación:** el dictado cuenta para la racha del día y abre los juegos. Hay dos medallas: «Buen oído» (el primer dictado) y «Mano firme» (10 dictados). En Padres → Progreso se ve el total y los últimos resultados.
+- **Sin voz:** si el dispositivo no tiene voz en español, un adulto puede dictar tocando «👁 Ver número».
+
+## 10. Ideas para siguientes versiones
 
 - **Evaluación inicial** al estilo Smartick o la «recomendación» de Supercerebros, para elegir el nivel de inicio automáticamente.
 - **Adaptación dentro de la sesión**: si falla dos seguidos, intercalar un ejercicio del nivel anterior.
 - **Recordatorio diario** («¡Hora del ábaco!»), empaquetando la app con Capacitor.
-- **Dictado de números en papel:** Mapi dice números en voz alta y ella los escribe en una hoja de dictado impresa.
 - **Varios perfiles**, por ejemplo para hermanos.
 - **Sincronizar el progreso** entre dispositivos (hoy se guarda en el navegador y se pasa con exportar e importar).
 - **Multiplicación y división** en el soroban.
