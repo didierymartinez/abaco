@@ -55,11 +55,14 @@ Está inspirada en Kumon (hojas diarias por niveles), Smartick (sesiones cortas 
 Lectura diaria de unos 10 minutos con Lino, el búho. Sirve para niños (desde que empiezan a leer frases) y para adultos. Cada lector tiene su perfil, con su racha, su nivel y su progreso.
 
 **Sesión de hoy, en cinco pasos:**
-1. **👁️ Calienta:** un ejercicio visual que cambia cada día: palabras relámpago, ojos de búho o busca la palabra.
+1. **👁️ Calienta:** un ejercicio corto que cambia cada día: palabras relámpago, ¿tiene sentido?, ojos de búho, ¿palabra real? o busca la palabra.
 2. **📖 Lee:** el texto del día, a su ritmo. Se mide en palabras por minuto (ppm). Por defecto, los niños leen en voz alta.
 3. **❓ Entiende:** tres preguntas sin mirar el texto: un dato, una deducción y una palabra.
-4. **⚡ Relee:** el mismo texto, un poco más rápido. Puede ser **con guía** (un resaltador avanza por el texto) o **palabra a palabra**, como las apps de lectura rápida, con la letra de enfoque en rojo, pausa y «⟲ volver a la frase».
-5. **🧠 Recuerda:** ordenar lo que pasó, un juego de memoria (día por medio) y una pregunta del texto de ayer y otra del de hace una semana (retención).
+4. **⚡ Relee:** el mismo texto, un poco más rápido. Hay tres formas:
+   - **con guía:** un resaltador avanza por el texto;
+   - **palabra a palabra:** como las apps de lectura rápida, con la letra de enfoque en rojo, pausa y «⟲ volver a la frase»;
+   - **en eco:** Lino lee cada frase y ella la repite igual. Es lo mejor cuando está empezando.
+5. **🧠 Recuerda:** una pregunta del texto de ayer y otra del de hace una semana (retención), ordenar lo que pasó y el juego del día: palabras para recordar, completa la frase, recuerda la frase o palabras amigas.
 
 **Cómo avanza:**
 - La velocidad de la guía se ajusta sola: sube cuando entiende y la sigue cómoda, y baja si fue muy rápida.
@@ -68,8 +71,11 @@ Lectura diaria de unos 10 minutos con Lino, el búho. Sirve para niños (desde q
 
 **Secciones:**
 - 🏠 **Hoy:** la sesión, la racha y la gráfica de velocidad.
-- 👁️ **Ejercicios:** palabras relámpago, ojos de búho, busca la palabra y palabras para recordar, con niveles que suben con dominio.
-- 📚 **Lector:** releer textos anteriores, o pegar cualquier texto para leerlo palabra a palabra o con guía.
+- 👁️ **Ejercicios:** nueve, con niveles que suben con dominio:
+  - **Ojos rápidos:** palabras relámpago, ojos de búho y busca la palabra.
+  - **Leer y entender:** ¿tiene sentido?, ¿palabra real?, completa la frase y palabras amigas.
+  - **Memoria:** palabras para recordar y recuerda la frase.
+- 📚 **Lector:** releer textos anteriores, o pegar cualquier texto para leerlo palabra a palabra, con guía o en eco con Lino.
 - 📈 **Progreso:** velocidad, comprensión, retención, medallas y velocidades de referencia por grado.
 - ⚙️ **Ajustes:** lectores, nivel, modos de lectura y copia de seguridad. Para niños, se entra con una multiplicación.
 
@@ -121,8 +127,9 @@ Con internet, la app siempre pide la versión actual. Al detectar una versión n
 | `lectura/index.html` | Mi Lectura: bienvenida y lectores, hoy, sesión, resultado, ejercicios, lector, progreso y ajustes; Lino en SVG |
 | `lectura/css/lectura.css` | Estilo de Mi Lectura (violeta y ámbar), texto con letra muy legible (Atkinson Hyperlegible) |
 | `lectura/js/textos-*.js` | Textos originales con preguntas, pregunta de retención y orden de sucesos (niños 1–3, 4–6 y adultos) |
+| `lectura/js/act-*.js` | Contenido de las actividades: frases con y sin sentido, frases para completar, palabras amigas y palabras reales o inventadas |
 | `lectura/js/palabras.js` | Palabras frecuentes, nombres y adjetivos para armar frases, letras y sílabas de los ejercicios |
-| `lectura/js/ejercicios.js` | Palabras relámpago, ojos de búho, busca la palabra, palabras para recordar y ordena la historia, con niveles por dominio |
-| `lectura/js/lector.js` | Texto por palabras, lectura con guía y palabra a palabra con letra de enfoque |
+| `lectura/js/ejercicios.js` | Los nueve ejercicios en tres grupos y ordena la historia, con niveles por dominio |
+| `lectura/js/lector.js` | Texto por palabras, lectura con guía, palabra a palabra con letra de enfoque y en eco |
 | `lectura/js/app.js` | Lógica: lectores, sesión diaria, velocidad y guía adaptativas, retención, medallas, gráfica y ajustes |
 | `lectura/manifest.webmanifest`, `lectura/sw.js`, `lectura/icons/` | Mi Lectura instalable por separado y sin conexión |
