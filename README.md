@@ -1,6 +1,14 @@
-# Mi Ábaco
+# Mi Ábaco y Mi Lectura
 
-Una app para que una niña practique a diario con el ábaco soroban y mejore la caligrafía de los números. Se instala en el celular o el computador y funciona sin internet.
+Este repositorio tiene dos apps hermanas, con la misma dinámica de sesión diaria, racha, estrellas y niveles que suben con dominio. Las dos se instalan en el celular o el computador y funcionan sin internet:
+- **Mi Ábaco** (en la raíz): ábaco soroban, caligrafía de números, dictado y juegos.
+- **[Mi Lectura](#mi-lectura)** (en `lectura/`): lectura diaria con Lino el búho para niños y adultos. Trabaja rango visual, velocidad, comprensión y memoria.
+
+Cada una tiene un enlace a la otra en su pantalla de inicio.
+
+## Mi Ábaco
+
+Una app para que una niña practique a diario con el ábaco soroban y mejore la caligrafía de los números.
 
 Los cálculos se hacen **en un ábaco real y con lápiz**. La app hace de guía: Mapi, la mascota, explica con voz, cronometra, corrige y lleva la racha.
 
@@ -42,13 +50,38 @@ Durante la sesión, el botón **«?»** abre la guía del nivel en cualquier mom
 
 Está inspirada en Kumon (hojas diarias por niveles), Smartick (sesiones cortas con respuesta inmediata) y la ruta «Soroban desde cero» de Supercerebros. El análisis está en [docs/analisis-plataformas.md](docs/analisis-plataformas.md).
 
+## Mi Lectura
+
+Lectura diaria de unos 10 minutos con Lino, el búho. Sirve para niños (desde que empiezan a leer frases) y para adultos. Cada lector tiene su perfil, con su racha, su nivel y su progreso.
+
+**Sesión de hoy, en cinco pasos:**
+1. **👁️ Calienta:** un ejercicio visual que cambia cada día: palabras relámpago, ojos de búho o busca la palabra.
+2. **📖 Lee:** el texto del día, a su ritmo. Se mide en palabras por minuto (ppm). Por defecto, los niños leen en voz alta.
+3. **❓ Entiende:** tres preguntas sin mirar el texto: un dato, una deducción y una palabra.
+4. **⚡ Relee:** el mismo texto, un poco más rápido. Puede ser **con guía** (un resaltador avanza por el texto) o **palabra a palabra**, como las apps de lectura rápida, con la letra de enfoque en rojo, pausa y «⟲ volver a la frase».
+5. **🧠 Recuerda:** ordenar lo que pasó, un juego de memoria (día por medio) y una pregunta del texto de ayer y otra del de hace una semana (retención).
+
+**Cómo avanza:**
+- La velocidad de la guía se ajusta sola: sube cuando entiende y la sigue cómoda, y baja si fue muy rápida.
+- Los niveles de texto de niños (del 1 al 6) suben con 3 lecturas seguidas con buena comprensión y a la velocidad del nivel, en al menos 2 días.
+- Los adultos ven su **velocidad efectiva** (velocidad × comprensión).
+
+**Secciones:**
+- 🏠 **Hoy:** la sesión, la racha y la gráfica de velocidad.
+- 👁️ **Ejercicios:** palabras relámpago, ojos de búho, busca la palabra y palabras para recordar, con niveles que suben con dominio.
+- 📚 **Lector:** releer textos anteriores, o pegar cualquier texto para leerlo palabra a palabra o con guía.
+- 📈 **Progreso:** velocidad, comprensión, retención, medallas y velocidades de referencia por grado.
+- ⚙️ **Ajustes:** lectores, nivel, modos de lectura y copia de seguridad. Para niños, se entra con una multiplicación.
+
+Trae 46 textos originales: 36 para niños, 6 por nivel, y 10 para adultos, cada uno con sus preguntas. La investigación y las fuentes están en [docs/lectura.md](docs/lectura.md).
+
 ## Uso
 
-Es HTML, CSS y JavaScript sin dependencias ni compilación. Para probarla en el computador:
+Es HTML, CSS y JavaScript sin dependencias ni compilación. Para probarlas en el computador:
 
 ```sh
 python3 -m http.server 8000
-# luego abrir http://localhost:8000
+# Mi Ábaco: http://localhost:8000 · Mi Lectura: http://localhost:8000/lectura/
 ```
 
 ### Instalarla en el celular
@@ -65,9 +98,11 @@ El progreso se guarda en el dispositivo. Para pasarlo a otro, usa *Padres → Ex
 
 ### Publicar una versión nueva
 
-Al cambiar archivos de la app, sube el número de versión en **dos lugares** para que los celulares no mezclen archivos viejos y nuevos:
-- `?v=` en los enlaces de `css/app.css` y `js/*.js` de `index.html`;
-- `ASSETS` y `VERSION` en `sw.js`.
+Al cambiar archivos de una app, sube el número de versión en **dos lugares** para que los celulares no mezclen archivos viejos y nuevos:
+- Mi Ábaco: `?v=` en los enlaces de `css/app.css` y `js/*.js` de `index.html`, y `ASSETS` y `VERSION` en `sw.js`.
+- Mi Lectura: lo mismo en `lectura/index.html` y `lectura/sw.js`.
+
+Cada app guarda sus propias copias sin conexión (`mi-abaco-…` y `mi-lectura-…`), y ninguna borra las de la otra.
 
 Con internet, la app siempre pide la versión actual. Al detectar una versión nueva se recarga sola, y sin internet usa la copia guardada.
 
@@ -83,3 +118,11 @@ Con internet, la app siempre pide la versión actual. Al detectar una versión n
 | `js/juegos.js` | Los juegos con el ábaco físico (pon el número, escucha y calcula, mira y calcula) y los de concentración (Schulte, memoria de cifras, flash del ábaco y Corsi), con niveles que suben con dominio |
 | `js/app.js` | Lógica de la app: mapa de progreso, sesión con ayuda «?», estrellas y medallas, Mapi y su voz, práctica en papel, dictado, impresión y padres |
 | `manifest.webmanifest`, `sw.js`, `icons/` | App instalable y sin conexión |
+| `lectura/index.html` | Mi Lectura: bienvenida y lectores, hoy, sesión, resultado, ejercicios, lector, progreso y ajustes; Lino en SVG |
+| `lectura/css/lectura.css` | Estilo de Mi Lectura (violeta y ámbar), texto con letra muy legible (Atkinson Hyperlegible) |
+| `lectura/js/textos-*.js` | Textos originales con preguntas, pregunta de retención y orden de sucesos (niños 1–3, 4–6 y adultos) |
+| `lectura/js/palabras.js` | Palabras frecuentes, nombres y adjetivos para armar frases, letras y sílabas de los ejercicios |
+| `lectura/js/ejercicios.js` | Palabras relámpago, ojos de búho, busca la palabra, palabras para recordar y ordena la historia, con niveles por dominio |
+| `lectura/js/lector.js` | Texto por palabras, lectura con guía y palabra a palabra con letra de enfoque |
+| `lectura/js/app.js` | Lógica: lectores, sesión diaria, velocidad y guía adaptativas, retención, medallas, gráfica y ajustes |
+| `lectura/manifest.webmanifest`, `lectura/sw.js`, `lectura/icons/` | Mi Lectura instalable por separado y sin conexión |

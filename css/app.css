@@ -191,6 +191,10 @@ button:focus-visible, [tabindex]:focus-visible, input:focus-visible, select:focu
 .dict-hint { font-size: 1.15rem; font-weight: 700; }
 .dict-reveal { font-size: 3rem; font-weight: 800; color: var(--primary-dark); margin: 4px 0; }
 
+/* Enlace a la otra app (Mi Lectura) */
+.link-card { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); margin-top: 18px; }
+.link-icon { font-size: 2rem; width: 56px; height: 56px; border-radius: 18px; background: #f0ebff; display: grid; place-items: center; flex: none; }
+
 /* Semana */
 .week-card { padding: 16px 20px; }
 .week-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }

@@ -8,8 +8,9 @@
  * Al publicar cambios: sube ASSETS en index.html (los ?v= de css y js) y aquí,
  * y sube VERSION.
  */
-const VERSION = 'mi-abaco-v11';
-const ASSETS = '11';
+const PREFIX = 'mi-abaco-';
+const VERSION = PREFIX + 'v12';
+const ASSETS = '12';
 const SHELL = [
   './',
   'index.html',
@@ -34,11 +35,12 @@ self.addEventListener('install', event => {
   );
 });
 
-// Al actualizar desde una versión anterior se borran sus copias y se recargan
-// las pantallas abiertas, para que muestren la versión nueva completa.
+// Al actualizar desde una versión anterior se borran sus copias (solo las de
+// Mi Ábaco: Mi Lectura guarda las suyas aparte) y se recargan las pantallas
+// abiertas, para que muestren la versión nueva completa.
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
-    const old = (await caches.keys()).filter(k => k !== VERSION);
+    const old = (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== VERSION);
     await Promise.all(old.map(k => caches.delete(k)));
     await self.clients.claim();
     if (old.length) {
@@ -62,6 +64,8 @@ self.addEventListener('fetch', event => {
     return;
   }
   if (url.origin !== self.location.origin) return;
+  // Mi Lectura (en /lectura/) tiene su propio service worker.
+  if (url.pathname.includes('/lectura/')) return;
 
   // Archivos de la app: primero la red (revalidando), y la copia solo sin conexión.
   event.respondWith((async () => {

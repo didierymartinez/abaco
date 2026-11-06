@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f3eeff">
+  <meta name="description" content="Lectura diaria con Lino: ojos rápidos, buena comprensión y memoria. Para niños y adultos.">
+  <title>Mi Lectura</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mi Lectura">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/lectura.css?v=1">
+</head>
+<body>
+  <!-- Lino, el búho lector: se dibuja una vez y se reutiliza -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="lino" viewBox="0 0 120 120">
+      <path d="M26 34 L34 6 L50 26 Z" fill="#5b3fd6"/>
+      <path d="M94 34 L86 6 L70 26 Z" fill="#5b3fd6"/>
+      <ellipse cx="18" cy="80" rx="10" ry="22" fill="#5b3fd6"/>
+      <ellipse cx="102" cy="80" rx="10" ry="22" fill="#5b3fd6"/>
+      <ellipse cx="60" cy="68" rx="44" ry="46" fill="#7b5cff"/>
+      <ellipse cx="60" cy="88" rx="28" ry="24" fill="#f1ecff"/>
+      <path d="M48 84 q4 4 8 0 M64 84 q4 4 8 0 M56 96 q4 4 8 0" stroke="#c9bcff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <circle cx="42" cy="54" r="17" fill="#fff" stroke="#5b3fd6" stroke-width="3"/>
+      <circle cx="78" cy="54" r="17" fill="#fff" stroke="#5b3fd6" stroke-width="3"/>
+      <g class="lino-eyes">
+        <circle cx="44" cy="56" r="8" fill="#1f2a44"/>
+        <circle cx="76" cy="56" r="8" fill="#1f2a44"/>
+        <circle cx="47" cy="53" r="2.6" fill="#fff"/>
+        <circle cx="79" cy="53" r="2.6" fill="#fff"/>
+      </g>
+      <path d="M54 66 L66 66 L60 77 Z" fill="#ffb02e"/>
+      <ellipse cx="48" cy="113" rx="8" ry="4" fill="#ffb02e"/>
+      <ellipse cx="72" cy="113" rx="8" ry="4" fill="#ffb02e"/>
+    </symbol>
+  </svg>
+
+  <div id="app">
+    <!-- Bienvenida: crear un perfil (niño o adulto) -->
+    <section class="view" id="view-welcome" hidden>
+      <div class="card onboarding">
+        <svg class="mascot big" viewBox="0 0 120 120" aria-hidden="true"><use href="#lino"/></svg>
+        <h1 id="welcome-title">¡Hola! Soy Lino</h1>
+        <p class="muted" id="welcome-text">Cada día leemos un ratito: calentamos los ojos, leemos un texto, respondemos y jugamos con la memoria.</p>
+        <label class="field">¿Cómo te llamas?
+          <input class="text-input" id="welcome-name" type="text" maxlength="20" autocomplete="off" placeholder="Tu nombre">
+        </label>
+        <p class="field-label">Elige tu dibujo</p>
+        <div class="avatar-picker" id="welcome-avatars"></div>
+        <p class="field-label">¿Quién va a leer?</p>
+        <div class="seg" id="welcome-kind">
+          <button type="button" data-kind="nino" class="is-selected">🧒 Un niño o niña</button>
+          <button type="button" data-kind="adulto">🧑 Un adulto</button>
+        </div>
+        <div id="welcome-level-box">
+          <p class="field-label">¿Cómo lee hoy?</p>
+          <div class="level-options" id="welcome-level"></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary btn-xl" id="welcome-go" type="button">¡Empezar!</button>
+          <button class="btn btn-ghost" id="welcome-cancel" type="button" hidden>Cancelar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inicio: la sesión de hoy, la racha y el progreso -->
+    <section class="view" id="view-home" hidden>
+      <header class="topbar">
+        <button class="avatar" id="home-avatar" type="button" aria-label="Cambiar de lector"></button>
+        <div class="topbar-text">
+          <h1 id="home-hello"></h1>
+          <p id="home-date"></p>
+        </div>
+        <span class="chip-stat" title="Días seguidos"><span aria-hidden="true">🔥</span><b id="home-streak">0</b></span>
+        <span class="chip-stat" title="Estrellas"><span aria-hidden="true">⭐</span><b id="home-stars">0</b></span>
+      </header>
+
+      <div class="card">
+        <div class="guide">
+          <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#lino"/></svg>
+          <p class="bubble" id="home-bubble"></p>
+        </div>
+      </div>
+
+      <div class="card hero">
+        <p class="eyebrow" id="today-level"></p>
+        <h2 class="hero-title"><span id="today-emoji"></span> <span id="today-title"></span></h2>
+        <p class="muted" id="today-meta"></p>
+        <ol class="steps" id="today-steps" aria-label="Pasos de la sesión"></ol>
+        <button class="btn btn-primary btn-block btn-xl" id="start-session" type="button">Empezar</button>
+        <p class="why" id="today-why"></p>
+      </div>
+
+      <div class="card week-card">
+        <div class="week-head">
+          <h3>Esta semana</h3>
+          <span class="muted" id="streak-best"></span>
+        </div>
+        <ol class="week" id="week-strip" aria-label="Últimos 7 días"></ol>
+      </div>
+
+      <div class="card">
+        <div class="week-head">
+          <h3>Tu lectura</h3>
+          <button class="btn btn-ghost" data-go="progress" type="button">Ver progreso →</button>
+        </div>
+        <div class="stats" id="home-stats"></div>
+        <div class="chart" id="home-chart"></div>
+      </div>
+
+      <a class="card link-card" href="../">
+        <span class="link-icon" aria-hidden="true">🧮</span>
+        <span><b>Mi Ábaco</b><br><span class="muted">La otra app: ábaco soroban, juegos y dictado.</span></span>
+      </a>
+    </section>
+
+    <!-- Sesión: pantalla completa, paso a paso -->
+    <section class="view session" id="view-session" hidden>
+      <div class="session-bar">
+        <button class="icon-btn" id="session-exit" type="button" aria-label="Salir">✕</button>
+        <ol class="phases" id="session-steps" aria-label="Pasos"></ol>
+        <button class="icon-btn small" id="session-voice" type="button" aria-label="Voz de Lino">🔊</button>
+      </div>
+      <div class="guide session-guide">
+        <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#lino"/></svg>
+        <p class="bubble" id="s-bubble"></p>
+      </div>
+      <div class="stage" id="s-stage"></div>
+    </section>
+
+    <!-- Resultado de la sesión -->
+    <section class="view" id="view-result" hidden>
+      <div class="card result-card center-text">
+        <svg class="mascot big" viewBox="0 0 120 120" aria-hidden="true"><use href="#lino"/></svg>
+        <div class="stars" id="result-stars"></div>
+        <h1 id="result-title"></h1>
+        <div class="stats" id="result-stats"></div>
+        <p class="result-message" id="result-message"></p>
+        <div class="new-badges" id="result-badges"></div>
+        <div class="row center">
+          <button class="btn btn-primary btn-xl" id="result-home" type="button">Listo</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ejercicios libres -->
+    <section class="view" id="view-exercises" hidden>
+      <div class="view-head"><h1>Ejercicios</h1></div>
+      <div class="card">
+        <div class="guide">
+          <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#lino"/></svg>
+          <p class="bubble" id="ex-bubble">Entrena tus ojos y tu memoria. Cada ejercicio sube de nivel cuando lo dominas varios días.</p>
+        </div>
+      </div>
+      <div class="games" id="ex-list"></div>
+    </section>
+
+    <!-- Un ejercicio -->
+    <section class="view session" id="view-exercise" hidden>
+      <div class="session-bar">
+        <button class="icon-btn" id="ex-exit" type="button" aria-label="Salir del ejercicio">✕</button>
+        <h2 class="game-title" id="ex-title"></h2>
+        <span class="chip-stat" id="ex-status"></span>
+      </div>
+      <div class="guide session-guide">
+        <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#lino"/></svg>
+        <p class="bubble" id="ex-play-bubble"></p>
+      </div>
+      <div class="stage game-board" id="ex-board"></div>
+    </section>
+
+    <!-- Lector: biblioteca y texto propio -->
+    <section class="view" id="view-library" hidden>
+      <div class="view-head"><h1>Lector</h1></div>
+      <div class="card">
+        <h2>Pega tu texto</h2>
+        <p class="muted">Cualquier texto: un cuento, una noticia, un capítulo. Se lee palabra a palabra o con guía.</p>
+        <textarea class="text-input textarea" id="own-text" rows="5" placeholder="Pega aquí el texto…"></textarea>
+        <div class="reader-options">
+          <label>Modo
+            <select id="own-mode">
+              <option value="rsvp">Palabra a palabra</option>
+              <option value="guia">Con guía</option>
+            </select>
+          </label>
+          <label>Palabras por minuto <input type="number" id="own-wpm" min="40" max="1000" step="10" value="250"></label>
+          <label>Palabras a la vez
+            <select id="own-chunk">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </select>
+          </label>
+        </div>
+        <button class="btn btn-primary" id="own-go" type="button">▶ Leer</button>
+      </div>
+      <div class="card">
+        <h2>Textos de Lino</h2>
+        <p class="muted" id="library-note"></p>
+        <ol class="library" id="library-list"></ol>
+      </div>
+    </section>
+
+    <!-- Lector a pantalla completa -->
+    <section class="view session" id="view-reader" hidden>
+      <div class="session-bar">
+        <button class="icon-btn" id="reader-exit" type="button" aria-label="Salir">✕</button>
+        <h2 class="game-title" id="reader-title"></h2>
+        <span class="chip-stat" id="reader-wpm"></span>
+      </div>
+      <div class="stage" id="reader-stage"></div>
+      <div class="reader-controls" id="reader-controls">
+        <button class="icon-btn" id="reader-slower" type="button" aria-label="Más despacio">−</button>
+        <button class="icon-btn" id="reader-back" type="button" aria-label="Volver al inicio de la frase">⟲</button>
+        <button class="icon-btn play" id="reader-pause" type="button" aria-label="Pausa">⏸️</button>
+        <button class="icon-btn" id="reader-faster" type="button" aria-label="Más rápido">+</button>
+      </div>
+    </section>
+
+    <!-- Progreso -->
+    <section class="view" id="view-progress" hidden>
+      <div class="view-head"><h1>Progreso</h1></div>
+      <div class="card">
+        <h2>Velocidad</h2>
+        <p class="muted" id="progress-speed-note"></p>
+        <div class="chart big" id="progress-chart"></div>
+        <div class="stats" id="progress-stats"></div>
+        <p class="muted" id="progress-level"></p>
+      </div>
+      <div class="card">
+        <h2>Medallas</h2>
+        <div class="badges" id="progress-badges"></div>
+      </div>
+      <div class="card">
+        <h2>Ejercicios</h2>
+        <p class="muted" id="progress-exercises"></p>
+      </div>
+      <div class="card">
+        <h2>¿Cuánto se lee a cada edad?</h2>
+        <p class="muted">Promedios de estudiantes hispanohablantes, en palabras por minuto (Ripoll y otros, 2020). Cada niño tiene su ritmo: lo importante es que suba poco a poco y entienda lo que lee.</p>
+        <table class="norms">
+          <thead><tr><th>Grado</th><th>En voz alta</th><th>En silencio</th></tr></thead>
+          <tbody id="norms-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Ajustes y perfiles -->
+    <section class="view" id="view-settings" hidden>
+      <div class="view-head"><h1>Ajustes</h1></div>
+      <div class="card" id="gate">
+        <p>Esta parte es para adultos.</p>
+        <p class="gate-q"><b id="gate-question"></b> = <input class="text-input small" id="gate-answer" type="number" inputmode="numeric"></p>
+        <button class="btn btn-primary" id="gate-go" type="button">Entrar</button>
+      </div>
+      <div id="settings-body" hidden>
+        <div class="card">
+          <h2>Lectores</h2>
+          <p class="muted">Cada lector tiene su racha, su nivel y su progreso.</p>
+          <ul class="profiles" id="profile-list"></ul>
+          <button class="btn btn-soft" id="profile-add" type="button">＋ Agregar lector</button>
+        </div>
+        <div class="card">
+          <h2 id="settings-who"></h2>
+          <div class="form-grid">
+            <label>Nivel de los textos
+              <select id="set-level"></select>
+            </label>
+            <label>Primera lectura
+              <select id="set-read-mode">
+                <option value="voz">En voz alta</option>
+                <option value="silencio">En silencio</option>
+              </select>
+            </label>
+            <label>Relectura rápida
+              <select id="set-reread">
+                <option value="guia">Con guía (resaltador)</option>
+                <option value="rsvp">Palabra a palabra</option>
+              </select>
+            </label>
+            <label>Velocidad de la guía (ppm)
+              <input type="number" id="set-pace" min="20" max="1000" step="5">
+            </label>
+          </div>
+          <label class="check"><input type="checkbox" id="set-voice"> Lino lee las instrucciones en voz alta</label>
+          <p class="muted" id="settings-pace-note"></p>
+          <button class="btn btn-danger" id="profile-delete" type="button">Borrar este lector</button>
+        </div>
+        <div class="card">
+          <h2>Copia de seguridad</h2>
+          <p class="muted">El progreso se guarda en este dispositivo. Para pasarlo a otro, exporta y luego importa.</p>
+          <div class="row">
+            <button class="btn btn-soft" id="export-btn" type="button">⬇ Exportar</button>
+            <label class="btn btn-soft file-btn">⬆ Importar<input type="file" id="import-file" accept="application/json"></label>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Cómo funciona</h2>
+          <ul class="how">
+            <li><b>👁️ Calienta:</b> un ejercicio corto para los ojos (palabras relámpago, ojos de búho o busca la palabra).</li>
+            <li><b>📖 Lee:</b> el texto del día, a su ritmo. Se mide la velocidad en palabras por minuto (ppm).</li>
+            <li><b>❓ Entiende:</b> tres preguntas sin mirar el texto: un dato, una deducción y una palabra.</li>
+            <li><b>⚡ Relee:</b> el mismo texto otra vez, un poco más rápido, siguiendo la guía o palabra a palabra. Releer es de lo que más ayuda a leer con fluidez.</li>
+            <li><b>🧠 Recuerda:</b> ordenar lo que pasó, jugar con la memoria y, al día siguiente, una pregunta del texto anterior (retención).</li>
+          </ul>
+          <p class="muted">El nivel de los textos sube cuando lee 3 textos seguidos con buena comprensión (2 de 3 o más) y a la velocidad del nivel, en al menos 2 días. La guía se acelera solo si entendió y le pareció cómoda.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ¿Quién lee? -->
+  <dialog class="who" id="who" aria-labelledby="who-title">
+    <h2 id="who-title">¿Quién lee?</h2>
+    <div class="who-list" id="who-list"></div>
+    <div class="row">
+      <button class="btn btn-soft" id="who-new" type="button">＋ Nuevo lector</button>
+      <button class="btn btn-ghost" id="who-close" type="button">Cerrar</button>
+    </div>
+  </dialog>
+
+  <nav class="tabbar" id="tabbar" aria-label="Secciones">
+    <button type="button" data-go="home" data-tab="home"><span aria-hidden="true">🏠</span>Hoy</button>
+    <button type="button" data-go="exercises" data-tab="exercises"><span aria-hidden="true">👁️</span>Ejercicios</button>
+    <button type="button" data-go="library" data-tab="library"><span aria-hidden="true">📚</span>Lector</button>
+    <button type="button" data-go="progress" data-tab="progress"><span aria-hidden="true">📈</span>Progreso</button>
+    <button type="button" data-go="settings" data-tab="settings"><span aria-hidden="true">⚙️</span>Ajustes</button>
+  </nav>
+
+  <script src="js/palabras.js?v=1"></script>
+  <script src="js/textos-n1.js?v=1"></script>
+  <script src="js/textos-n2.js?v=1"></script>
+  <script src="js/textos-adultos.js?v=1"></script>
+  <script src="js/ejercicios.js?v=1"></script>
+  <script src="js/lector.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
+</body>
+</html>
