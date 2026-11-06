@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Mi Lectura">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
-  <link rel="stylesheet" href="css/lectura.css?v=1">
+  <link rel="stylesheet" href="css/lectura.css?v=2">
 </head>
 <body>
   <!-- Lino, el búho lector: se dibuja una vez y se reutiliza -->
@@ -155,7 +155,7 @@
       <div class="card">
         <div class="guide">
           <svg class="mascot" viewBox="0 0 120 120" aria-hidden="true"><use href="#lino"/></svg>
-          <p class="bubble" id="ex-bubble">Entrena tus ojos y tu memoria. Cada ejercicio sube de nivel cuando lo dominas varios días.</p>
+          <p class="bubble" id="ex-bubble">Entrena tus ojos, tu lectura y tu memoria. Cada ejercicio sube de nivel cuando lo dominas varios días.</p>
         </div>
       </div>
       <div class="games" id="ex-list"></div>
@@ -187,6 +187,7 @@
             <select id="own-mode">
               <option value="rsvp">Palabra a palabra</option>
               <option value="guia">Con guía</option>
+              <option value="eco">En eco con Lino</option>
             </select>
           </label>
           <label>Palabras por minuto <input type="number" id="own-wpm" min="40" max="1000" step="10" value="250"></label>
@@ -282,6 +283,7 @@
               <select id="set-reread">
                 <option value="guia">Con guía (resaltador)</option>
                 <option value="rsvp">Palabra a palabra</option>
+                <option value="eco">En eco: Lino lee y tú repites</option>
               </select>
             </label>
             <label>Velocidad de la guía (ppm)
@@ -303,11 +305,11 @@
         <div class="card">
           <h2>Cómo funciona</h2>
           <ul class="how">
-            <li><b>👁️ Calienta:</b> un ejercicio corto para los ojos (palabras relámpago, ojos de búho o busca la palabra).</li>
+            <li><b>👁️ Calienta:</b> un ejercicio corto que cambia cada día: palabras relámpago, ¿tiene sentido?, ojos de búho, ¿palabra real? o busca la palabra.</li>
             <li><b>📖 Lee:</b> el texto del día, a su ritmo. Se mide la velocidad en palabras por minuto (ppm).</li>
             <li><b>❓ Entiende:</b> tres preguntas sin mirar el texto: un dato, una deducción y una palabra.</li>
-            <li><b>⚡ Relee:</b> el mismo texto otra vez, un poco más rápido, siguiendo la guía o palabra a palabra. Releer es de lo que más ayuda a leer con fluidez.</li>
-            <li><b>🧠 Recuerda:</b> ordenar lo que pasó, jugar con la memoria y, al día siguiente, una pregunta del texto anterior (retención).</li>
+            <li><b>⚡ Relee:</b> el mismo texto otra vez: con guía, palabra a palabra o en eco (Lino lee cada frase y luego la lee ella; ideal al empezar a leer). Releer es de lo que más ayuda a leer con fluidez.</li>
+            <li><b>🧠 Recuerda:</b> la pregunta del texto anterior (retención), ordenar lo que pasó y el juego del día: palabras para recordar, completa la frase, recuerda la frase o palabras amigas.</li>
           </ul>
           <p class="muted">El nivel de los textos sube cuando lee 3 textos seguidos con buena comprensión (2 de 3 o más) y a la velocidad del nivel, en al menos 2 días. La guía se acelera solo si entendió y le pareció cómoda.</p>
         </div>
@@ -333,12 +335,15 @@
     <button type="button" data-go="settings" data-tab="settings"><span aria-hidden="true">⚙️</span>Ajustes</button>
   </nav>
 
-  <script src="js/palabras.js?v=1"></script>
-  <script src="js/textos-n1.js?v=1"></script>
-  <script src="js/textos-n2.js?v=1"></script>
-  <script src="js/textos-adultos.js?v=1"></script>
-  <script src="js/ejercicios.js?v=1"></script>
-  <script src="js/lector.js?v=1"></script>
-  <script src="js/app.js?v=1"></script>
+  <script src="js/palabras.js?v=2"></script>
+  <script src="js/textos-n1.js?v=2"></script>
+  <script src="js/textos-n2.js?v=2"></script>
+  <script src="js/textos-adultos.js?v=2"></script>
+  <script src="js/act-sentido.js?v=2"></script>
+  <script src="js/act-completa.js?v=2"></script>
+  <script src="js/act-palabras.js?v=2"></script>
+  <script src="js/ejercicios.js?v=2"></script>
+  <script src="js/lector.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
 </body>
 </html>

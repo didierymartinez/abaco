@@ -170,5 +170,41 @@
     };
   }
 
-  global.Lector = { countWords, tokens, render, guide, rsvp, focusIndex };
+  /* ---------- Lectura en eco: Lino lee una frase y luego la lee ella ---------- */
+
+  // opts.speak(frase) → promesa que se cumple cuando Lino termina de leerla;
+  // opts.turn(i, total) → promesa que se cumple cuando ella dice que ya la leyó.
+  function eco(box, text, opts) {
+    const list = tokens(text);
+    const spans = render(box, text);
+    box.classList.add('is-echo');
+    const sentences = [];
+    let current = [];
+    list.forEach((t, i) => {
+      current.push(i);
+      if (t.end || t.last || (list[i + 1] && list[i + 1].p !== t.p)) {
+        sentences.push(current);
+        current = [];
+      }
+    });
+    if (current.length) sentences.push(current);
+    let alive = true;
+    (async () => {
+      for (let k = 0; k < sentences.length && alive; k++) {
+        const idx = sentences[k];
+        idx.forEach(i => spans[i].classList.add('is-lino'));
+        if (spans[idx[0]].scrollIntoView && opts.scroll !== false) spans[idx[0]].scrollIntoView({ block: 'center', behavior: 'smooth' });
+        await opts.speak(idx.map(i => list[i].w).join(' '));
+        if (!alive) return;
+        idx.forEach(i => { spans[i].classList.remove('is-lino'); spans[i].classList.add('is-turn'); });
+        await opts.turn(k, sentences.length);
+        if (!alive) return;
+        idx.forEach(i => { spans[i].classList.remove('is-turn'); spans[i].classList.add('is-read'); });
+      }
+      if (alive && opts.onEnd) opts.onEnd();
+    })();
+    return { stop() { alive = false; }, sentences: sentences.length };
+  }
+
+  global.Lector = { countWords, tokens, render, guide, rsvp, eco, focusIndex };
 })(window);

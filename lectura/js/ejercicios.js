@@ -1,11 +1,19 @@
 /*
- * Mi Lectura – ejercicios de rango visual, atención y memoria.
+ * Mi Lectura – ejercicios, en tres grupos.
  *
+ * Ojos rápidos:
  *   Palabras relámpago     una palabra o frase aparece un instante (taquistoscopio)
  *   Ojos de búho           mirar el punto y ver las letras de los lados (campo visual)
  *   Busca la palabra       encontrar todas las veces que aparece una palabra (escaneo)
- *   Palabras para recordar ver unas palabras y reconocerlas después (memoria)
- *   Ordena la historia     poner en orden lo que pasó en el texto (retención)
+ * Leer y entender:
+ *   ¿Tiene sentido?        decidir rápido si una frase tiene sentido (fluidez silenciosa)
+ *   ¿Palabra real?         ¿existe o es inventada? (reconocimiento de palabras)
+ *   Completa la frase      elegir la palabra que falta (comprensión, tipo maze)
+ *   Palabras amigas        sinónimos y contrarios (vocabulario)
+ * Memoria:
+ *   Palabras para recordar ver unas palabras y reconocerlas después
+ *   Recuerda la frase      ver una frase y armarla de memoria (memoria de trabajo)
+ *   Ordena la historia     poner en orden lo que pasó en el texto (retención, en la sesión)
  *
  * Como en los juegos de Mi Ábaco, cada ejercicio tiene niveles. El nivel solo
  * sube con dominio: al menos MIN_PLAYS partidas en ese nivel y las últimas
@@ -54,10 +62,34 @@
     6: { cells: 30, cols: 5, min: 6, max: 9, hits: 4, sec: 27 }
   };
   const SEARCH_ROUNDS = 3;
+  // ¿Tiene sentido?: banco de frases (1 cortas, 2 medianas, 3 largas) y meta de aciertos netos en 60 s.
+  const SENSE = {
+    1: { bank: 1, goal: 5 }, 2: { bank: 1, goal: 8 }, 3: { bank: 2, goal: 6 }, 4: { bank: 2, goal: 9 },
+    5: { bank: 3, goal: 7 }, 6: { bank: 3, goal: 10 }, 7: { bank: 3, goal: 14 }
+  };
+  const SENSE_SECONDS = 60;
+  // ¿Palabra real?: banco de palabras y tiempo a la vista (0 = sin límite).
+  const LEX = {
+    1: { bank: 1, ms: 0 }, 2: { bank: 2, ms: 0 }, 3: { bank: 1, ms: 900 },
+    4: { bank: 2, ms: 700 }, 5: { bank: 3, ms: 0 }, 6: { bank: 3, ms: 600 }
+  };
+  // Recuerda la frase: cantidad de palabras de la frase.
+  const SENTENCE = { 1: [4, 5], 2: [5, 6], 3: [6, 7], 4: [8, 9], 5: [10, 12], 6: [13, 16] };
+  const BANK_NAME = { 1: 'frases cortas', 2: 'frases medianas', 3: 'frases largas' };
+
+  // Contenido de las actividades (archivos act-*.js).
+  const A = () => global.ACTIVIDADES || {};
+  const countWords = t => t.split(/\s+/).filter(w => /[\p{L}\p{N}]/u.test(w)).length;
+
+  const GROUPS = [
+    { id: 'ojos', icon: '👁️', name: 'Ojos rápidos', note: 'Rango visual, rapidez y atención.' },
+    { id: 'leer', icon: '📖', name: 'Leer y entender', note: 'Reconocer palabras, entender frases y aprender palabras nuevas.' },
+    { id: 'memoria', icon: '🧠', name: 'Memoria', note: 'Guardar lo que lees y recordarlo.' }
+  ];
 
   const EXERCISES = [
     {
-      id: 'relampago', icon: '⚡', name: 'Palabras relámpago', skill: 'Rapidez visual',
+      id: 'relampago', group: 'ojos', icon: '⚡', name: 'Palabras relámpago', skill: 'Rapidez visual',
       short: 'Una palabra aparece un instante: ¿cuál era?',
       levels: [1, 2, 3, 4, 5, 6, 7, 8], start: { nino: 1, adulto: 5 }, rounds: 8, need: 7, better: higher,
       levelName: l => FLASH[l].words === 1 ? `palabras de ${FLASH[l].min} a ${FLASH[l].max} letras` : `frases de ${FLASH[l].words} palabras`,
@@ -67,7 +99,7 @@
       intro: () => 'Mira la cruz del centro. Una palabra va a aparecer muy rápido y se va a tapar. Después elige cuál era.'
     },
     {
-      id: 'buho', icon: '🦉', name: 'Ojos de búho', skill: 'Campo visual',
+      id: 'buho', group: 'ojos', icon: '🦉', name: 'Ojos de búho', skill: 'Campo visual',
       short: 'Mira el punto y descubre las letras de los lados.',
       levels: [1, 2, 3, 4, 5, 6, 7], start: { nino: 1, adulto: 3 }, rounds: 8, need: 6, better: higher,
       levelName: l => `${SPAN[l].syl ? 'sílabas' : 'letras'} a ${['', 'muy poca', 'poca', 'media', 'buena', 'buena', 'mucha', 'muchísima'][l]} distancia`,
@@ -77,7 +109,7 @@
       intro: () => 'Mira solo el punto del centro, sin mover los ojos. A los lados van a aparecer dos letras. ¿Cuáles eran?'
     },
     {
-      id: 'busca', icon: '🔍', name: 'Busca la palabra', skill: 'Atención',
+      id: 'busca', group: 'ojos', icon: '🔍', name: 'Busca la palabra', skill: 'Atención',
       short: 'Encuentra todas las veces que aparece una palabra.',
       levels: [1, 2, 3, 4, 5, 6], start: { nino: 1, adulto: 4 }, better: lower,
       levelName: l => `tableros de ${SEARCH[l].cells} palabras`,
@@ -87,7 +119,7 @@
       intro: () => 'Arriba verás una palabra. Toca todas las veces que aparece en el tablero, lo más rápido que puedas.'
     },
     {
-      id: 'recuerda', icon: '🧠', name: 'Palabras para recordar', skill: 'Memoria',
+      id: 'recuerda', group: 'memoria', icon: '🧠', name: 'Palabras para recordar', skill: 'Memoria',
       short: 'Mira unas palabras, guárdalas y encuéntralas.',
       levels: [3, 4, 5, 6, 7, 8], start: { nino: 3, adulto: 5 }, rounds: 3, need: 2, better: higher,
       levelName: l => `${l} palabras`,
@@ -95,6 +127,56 @@
       goal: () => 'recordar todas las palabras en 2 de 3 rondas',
       scoreText: s => `${s} de 3`,
       intro: () => 'Vas a ver unas palabras. Léelas y guárdalas en tu memoria. Cuando se escondan, toca las que viste.'
+    },
+    {
+      id: 'sentido', group: 'leer', icon: '✅', name: '¿Tiene sentido?', skill: 'Lectura silenciosa',
+      short: 'Lee cada frase y decide rápido si tiene sentido.',
+      levels: [1, 2, 3, 4, 5, 6, 7], start: { nino: 1, adulto: 5 }, better: higher,
+      levelName: l => `${BANK_NAME[SENSE[l].bank]}, meta ${SENSE[l].goal}`,
+      levelShort: l => `Nivel ${l}`,
+      goal: l => `${SENSE[l].goal} aciertos o más en ${SENSE_SECONDS} segundos, con máximo 2 errores`,
+      scoreText: s => `${s} ✓`,
+      intro: () => `Tienes ${SENSE_SECONDS} segundos. Lee cada frase en silencio y toca «Sí» si tiene sentido o «No» si es un disparate. ¡Rápido, pero leyendo bien!`
+    },
+    {
+      id: 'real', group: 'leer', icon: '🔤', name: '¿Palabra real?', skill: 'Reconocer palabras',
+      short: '¿Existe o es inventada? Decide de un vistazo.',
+      levels: [1, 2, 3, 4, 5, 6], start: { nino: 1, adulto: 5 }, rounds: 12, need: 10, better: higher,
+      levelName: l => `palabras ${['', 'cortas', 'medianas', 'cortas que se esconden', 'medianas que se esconden', 'largas', 'largas que se esconden'][l]}`,
+      levelShort: l => `Nivel ${l}`,
+      goal: () => 'acertar 10 de 12',
+      scoreText: s => `${s} de 12`,
+      intro: () => 'Algunas palabras existen y otras son inventadas por mí. Léela con cuidado: ¿existe o es inventada?'
+    },
+    {
+      id: 'completa', group: 'leer', icon: '🧩', name: 'Completa la frase', skill: 'Comprensión',
+      short: 'Elige la palabra que le da sentido a la frase.',
+      levels: [1, 2, 3], start: { nino: 1, adulto: 3 }, rounds: 8, need: 7, better: higher,
+      levelName: l => BANK_NAME[l],
+      levelShort: l => `Nivel ${l}`,
+      goal: () => 'acertar 7 de 8',
+      scoreText: s => `${s} de 8`,
+      intro: () => 'A cada frase le falta una palabra. Lee la frase completa y elige la palabra que tiene sentido.'
+    },
+    {
+      id: 'amigas', group: 'leer', icon: '💬', name: 'Palabras amigas', skill: 'Vocabulario',
+      short: 'Encuentra la palabra que significa lo mismo o lo contrario.',
+      levels: [1, 2, 3], start: { nino: 1, adulto: 3 }, rounds: 8, need: 7, better: higher,
+      levelName: l => ['', 'palabras de todos los días', 'palabras más ricas', 'palabras difíciles'][l],
+      levelShort: l => `Nivel ${l}`,
+      goal: () => 'acertar 7 de 8',
+      scoreText: s => `${s} de 8`,
+      intro: () => 'Te muestro una palabra. Busca su amiga: la que significa lo mismo, o la que significa lo contrario. ¡Fíjate qué te pido!'
+    },
+    {
+      id: 'frase', group: 'memoria', icon: '📝', name: 'Recuerda la frase', skill: 'Memoria de trabajo',
+      short: 'Lee una frase, guárdala y ármala de memoria.',
+      levels: [1, 2, 3, 4, 5, 6], start: { nino: 1, adulto: 4 }, rounds: 3, need: 2, better: higher,
+      levelName: l => `frases de ${SENTENCE[l][0]} a ${SENTENCE[l][1]} palabras`,
+      levelShort: l => `Nivel ${l}`,
+      goal: () => 'armar 2 de 3 frases sin errores',
+      scoreText: s => `${s} de 3`,
+      intro: () => 'Lee la frase y guárdala en tu memoria. Cuando se esconda, toca sus palabras en orden. ¡Ojo, hay palabras que sobran!'
     }
   ];
   const BY_ID = Object.fromEntries(EXERCISES.map(e => [e.id, e]));
@@ -503,7 +585,216 @@
     });
   }
 
-  const ENGINES = { relampago, buho, busca, recuerda };
+  /* ---------- ¿Tiene sentido? (fluidez lectora silenciosa) ---------- */
+
+  async function sentido(env, life) {
+    const spec = SENSE[env.level];
+    const bank = shuffle((A().sentido || []).filter(x => x.level === spec.bank));
+    let right = 0, wrong = 0, k = 0;
+    env.board.innerHTML = '';
+    const card = el('p', 'sense-card', '¡Prepárate…!');
+    env.board.appendChild(card);
+    const row = el('div', 'sense-buttons');
+    const yes = button('btn btn-success btn-xl', '✓ Sí');
+    const no = button('btn btn-danger btn-xl', '✗ No');
+    row.append(yes, no);
+    env.board.appendChild(row);
+    yes.disabled = no.disabled = true;
+    await life.wait(1200);
+    if (!life.alive) return;
+    const end = Date.now() + SENSE_SECONDS * 1000;
+    let current = null;
+    const next = () => {
+      current = bank[k++ % bank.length];
+      card.textContent = current.s;
+      card.classList.remove('is-ok', 'is-wrong');
+    };
+    const answer = ok => {
+      if (!life.alive || !current) return;
+      if (ok === current.ok) { right++; env.sounds.tick(); card.classList.add('is-ok'); } else { wrong++; env.sounds.bad(); card.classList.add('is-wrong'); }
+      current = null;
+      life.wait(220).then(() => { if (Date.now() < end) next(); });
+    };
+    yes.addEventListener('click', () => answer(true));
+    no.addEventListener('click', () => answer(false));
+    yes.disabled = no.disabled = false;
+    next();
+    env.say('¡Ya!', null, '');
+    while (life.alive && Date.now() < end) {
+      env.status(`⏱ ${Math.ceil((end - Date.now()) / 1000)} s · ${right} ✓`);
+      await life.wait(250);
+    }
+    if (!life.alive) return;
+    yes.disabled = no.disabled = true;
+    const score = Math.max(0, right - wrong);
+    const ok = score >= spec.goal && wrong <= 2;
+    env.finish({
+      score, ok, stars: ok ? 3 : score >= Math.ceil(spec.goal * 0.7) ? 2 : 1, noRecord: wrong > 2,
+      text: `Leíste ${right + wrong} frases: ${right} bien y ${wrong} ${wrong === 1 ? 'error' : 'errores'}.`
+    });
+  }
+
+  /* ---------- ¿Palabra real? (decisión léxica) ---------- */
+
+  async function real(env, life) {
+    const def = BY_ID.real;
+    const spec = LEX[env.level];
+    const reals = shuffle(((A().reales || {})[spec.bank]) || []);
+    const fakes = shuffle(((A().inventadas || {})[spec.bank]) || []);
+    const items = shuffle(reals.slice(0, def.rounds / 2).map(w => ({ w, ok: true }))
+      .concat(fakes.slice(0, def.rounds / 2).map(w => ({ w, ok: false }))));
+    let score = 0;
+    for (let round = 0; round < items.length && life.alive; round++) {
+      const item = items[round];
+      env.status(`${round + 1} de ${items.length}`);
+      env.board.innerHTML = '';
+      const stage = el('div', 'flash-stage');
+      const word = el('p', 'flash-word', item.w);
+      stage.appendChild(word);
+      env.board.appendChild(stage);
+      const row = el('div', 'sense-buttons');
+      const yes = button('btn btn-success btn-xl', '✓ Existe');
+      const no = button('btn btn-soft btn-xl', '✗ Inventada');
+      row.append(yes, no);
+      env.board.appendChild(row);
+      if (spec.ms) life.wait(spec.ms).then(() => { if (word.isConnected) { word.textContent = '#'.repeat(item.w.length); word.classList.add('is-mask'); } });
+      const i = await tap([yes, no]);
+      if (!life.alive) return;
+      const ok = (i === 0) === item.ok;
+      word.textContent = item.w;
+      word.classList.remove('is-mask');
+      if (ok) { score++; env.sounds.ok(); env.say(item.ok ? '¡Sí existe!' : '¡Bien! Es inventada.', 'ok', ''); } else { env.sounds.bad(); env.say(item.ok ? `«${item.w}» sí existe.` : `«${item.w}» es inventada.`, 'try', ''); }
+      [yes, no].forEach(b => { b.disabled = true; });
+      stage.classList.add(ok ? 'is-ok' : 'is-wrong');
+      await life.wait(ok ? 600 : 1500);
+    }
+    if (!life.alive) return;
+    env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Acertaste ${score} de ${items.length}.` });
+  }
+
+  /* ---------- Completa la frase (comprensión, tipo maze) ---------- */
+
+  async function completa(env, life) {
+    const def = BY_ID.completa;
+    const items = shuffle((A().completa || []).filter(x => x.level === env.level)).slice(0, def.rounds);
+    let score = 0;
+    for (let round = 0; round < items.length && life.alive; round++) {
+      const item = items[round];
+      env.status(`${round + 1} de ${items.length}`);
+      env.board.innerHTML = '';
+      const [before, after] = item.s.split('___');
+      const sentence = el('p', 'cloze');
+      const gap = el('span', 'cloze-gap', '\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0');
+      sentence.append(document.createTextNode(before), gap, document.createTextNode(after));
+      env.board.appendChild(sentence);
+      env.say(round === 0 ? '¿Qué palabra falta?' : '¿Y aquí?', null, '');
+      const right = item.options[0];
+      const ok = await choose(env, life, shuffle(item.options), right);
+      if (ok === null) return;
+      gap.textContent = right;
+      gap.classList.add('is-filled');
+      if (ok) { score++; env.sounds.ok(); env.say('¡Tiene sentido!', 'ok', ''); } else { env.sounds.bad(); env.say(`La que tiene sentido es «${right}».`, 'try', ''); }
+      await life.wait(ok ? 900 : 2000);
+    }
+    if (!life.alive) return;
+    env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Acertaste ${score} de ${items.length}.` });
+  }
+
+  /* ---------- Palabras amigas (vocabulario) ---------- */
+
+  async function amigas(env, life) {
+    const def = BY_ID.amigas;
+    const items = shuffle((A().amigas || []).filter(x => x.level === env.level)).slice(0, def.rounds);
+    let score = 0;
+    for (let round = 0; round < items.length && life.alive; round++) {
+      const item = items[round];
+      env.status(`${round + 1} de ${items.length}`);
+      env.board.innerHTML = '';
+      const same = item.kind === 'igual';
+      env.board.appendChild(el('p', 'vocab-kind ' + (same ? 'is-same' : 'is-opposite'), same ? '= Significa lo mismo que…' : '↔ Es lo contrario de…'));
+      env.board.appendChild(el('p', 'vocab-word', item.w));
+      env.say(same ? `¿Qué palabra significa lo mismo que «${item.w}»?` : `¿Cuál es lo contrario de «${item.w}»?`, null, '');
+      const right = item.options[0];
+      const ok = await choose(env, life, shuffle(item.options), right);
+      if (ok === null) return;
+      if (ok) { score++; env.sounds.ok(); env.say(same ? `¡Sí! «${item.w}» y «${right}» son amigas.` : `¡Sí! «${right}» es lo contrario.`, 'ok', ''); } else { env.sounds.bad(); env.say(same ? `Era «${right}».` : `Lo contrario es «${right}».`, 'try', ''); }
+      await life.wait(ok ? 900 : 2000);
+    }
+    if (!life.alive) return;
+    env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Acertaste ${score} de ${items.length}.` });
+  }
+
+  /* ---------- Recuerda la frase (memoria de trabajo) ---------- */
+
+  async function frase(env, life) {
+    const def = BY_ID.frase;
+    const [min, max] = SENTENCE[env.level];
+    const all = (A().sentido || []).filter(x => x.ok);
+    const pool = shuffle(all.filter(x => { const n = countWords(x.s); return n >= min && n <= max; }));
+    const strip = w => w.replace(/^[¿¡«]+|[.,;:!?»]+$/g, '');
+    let score = 0;
+    for (let round = 1; round <= def.rounds && life.alive; round++) {
+      env.status(`${round} de ${def.rounds}`);
+      const item = pool[(round - 1) % pool.length];
+      const words = item.s.split(/\s+/).map(strip).filter(Boolean);
+      // Palabras que sobran: de otras frases, que no estén en esta.
+      const extras = [];
+      for (const other of shuffle(all)) {
+        const cand = other.s.split(/\s+/).map(strip).filter(w => w.length > 2 && !words.includes(w) && !extras.includes(w));
+        if (cand.length) extras.push(pick(cand));
+        if (extras.length >= (env.kind === 'adulto' ? 3 : 2)) break;
+      }
+      env.board.innerHTML = '';
+      env.board.appendChild(el('p', 'game-target', 'Guarda esta frase:'));
+      env.board.appendChild(el('p', 'memory-sentence', item.s));
+      env.say('¡Léela y guárdala!', null, '');
+      await life.wait((env.kind === 'adulto' ? 380 : 700) * words.length + 1500);
+      if (!life.alive) return;
+      env.board.innerHTML = '';
+      env.board.appendChild(el('p', 'game-target', 'Arma la frase en orden'));
+      const built = el('p', 'built-sentence', '');
+      env.board.appendChild(built);
+      const grid = el('div', 'word-chips');
+      env.board.appendChild(grid);
+      env.say('¿Cómo era? Toca las palabras en orden.', null, '');
+      let next = 0;
+      let errors = 0;
+      await new Promise(resolve => {
+        shuffle(words.concat(extras)).forEach(w => {
+          const b = button('choice word-chip', w);
+          b.addEventListener('click', () => {
+            if (!life.alive || b.disabled) return;
+            if (w === words[next]) {
+              b.disabled = true;
+              b.classList.add('is-hidden');
+              built.textContent = (built.textContent ? built.textContent + ' ' : '') + w;
+              env.sounds.tick();
+              if (++next === words.length) resolve();
+            } else {
+              errors++;
+              env.sounds.bad();
+              b.classList.remove('is-wrong');
+              void b.offsetWidth;
+              b.classList.add('is-wrong');
+              // Con muchos errores se muestra la frase para no frustrar.
+              if (errors >= 4) resolve();
+            }
+          });
+          grid.appendChild(b);
+        });
+      });
+      if (!life.alive) return;
+      const perfect = errors === 0;
+      if (perfect) { score++; env.sounds.ok(); env.say('¡Perfecta, sin errores!', 'ok', ''); } else { env.say(`Era: «${item.s}»`, 'try', ''); }
+      built.textContent = item.s;
+      grid.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      await life.wait(perfect ? 1100 : 2600);
+    }
+    if (!life.alive) return;
+    env.finish({ score, ok: score >= def.need, stars: roundStars(def, score), text: `Armaste ${score} de ${def.rounds} frases sin errores.` });
+  }
+
+  const ENGINES = { relampago, buho, busca, recuerda, sentido, real, completa, amigas, frase };
 
   // Arranca un ejercicio en el nivel indicado. Devuelve una función para detenerlo.
   function start(id, env) {
@@ -512,14 +803,20 @@
     return () => life.stop();
   }
 
-  // Ejercicio sugerido del día (rango visual y atención; la memoria va al final).
+  const ofDay = (list, dayNumber) => BY_ID[list[((dayNumber % list.length) + list.length) % list.length]];
+
+  // Calentamiento del día: ojos rápidos y lectura veloz de palabras y frases.
   function warmupOfDay(dayNumber) {
-    const list = ['relampago', 'buho', 'busca'];
-    return BY_ID[list[((dayNumber % list.length) + list.length) % list.length]];
+    return ofDay(['relampago', 'sentido', 'buho', 'real', 'busca'], dayNumber);
+  }
+
+  // Juego del final de la sesión: memoria, comprensión o vocabulario.
+  function finalOfDay(dayNumber) {
+    return ofDay(['recuerda', 'completa', 'frase', 'amigas'], dayNumber);
   }
 
   global.Ejercicios = {
-    EXERCISES, BY_ID, MIN_PLAYS, STREAK_UP, HARD_DOWN, MIN_DAYS,
-    start, normalize, applyResult, recent, warmupOfDay, ordena, lifecycle, shuffle
+    EXERCISES, GROUPS, BY_ID, MIN_PLAYS, STREAK_UP, HARD_DOWN, MIN_DAYS,
+    start, normalize, applyResult, recent, warmupOfDay, finalOfDay, ordena, lifecycle, shuffle
   };
 })(window);

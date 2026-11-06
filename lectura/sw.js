@@ -9,8 +9,8 @@
  * y sube VERSION.
  */
 const PREFIX = 'mi-lectura-';
-const VERSION = PREFIX + 'v1';
-const ASSETS = '1';
+const VERSION = PREFIX + 'v2';
+const ASSETS = '2';
 const SHELL = [
   './',
   'index.html',
@@ -20,6 +20,9 @@ const SHELL = [
   `js/textos-n1.js?v=${ASSETS}`,
   `js/textos-n2.js?v=${ASSETS}`,
   `js/textos-adultos.js?v=${ASSETS}`,
+  `js/act-sentido.js?v=${ASSETS}`,
+  `js/act-completa.js?v=${ASSETS}`,
+  `js/act-palabras.js?v=${ASSETS}`,
   `js/ejercicios.js?v=${ASSETS}`,
   `js/lector.js?v=${ASSETS}`,
   `js/app.js?v=${ASSETS}`,

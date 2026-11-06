@@ -201,6 +201,28 @@
       });
     } catch (e) { /* sin voz */ }
   }
+  // Para la lectura en eco: Lino lee la frase aunque su voz esté apagada en el resto
+  // de la app, y avisa al terminar. Si el navegador no avisa, sigue tras un tiempo prudente.
+  function speakWait(text) {
+    return new Promise(resolve => {
+      const timer = setTimeout(resolve, 900 + 75 * text.length);
+      const done = () => { clearTimeout(timer); resolve(); };
+      if (!hasVoice()) return;
+      try {
+        window.speechSynthesis.cancel();
+        if (!voice) pickVoice();
+        const u = new SpeechSynthesisUtterance(speakable(text));
+        u.lang = voice ? voice.lang : 'es-MX';
+        if (voice) u.voice = voice;
+        u.rate = Math.min(data.settings.voiceRate || 0.95, kid() ? 0.85 : 1);
+        u.onend = done;
+        u.onerror = done;
+        window.speechSynthesis.speak(u);
+      } catch (e) { done(); }
+    });
+  }
+  const hasVoice = () => 'speechSynthesis' in window && spanishVoices().length > 0;
+
   function hush() {
     try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) { /* sin voz */ }
   }
@@ -329,7 +351,11 @@
     { id: 'nivel', icon: '⬆️', name: 'Nuevo nivel', desc: 'Pasar a textos de un nivel nuevo', won: p => p.levelUps >= 1 },
     { id: 'buho', icon: '🦉', name: 'Ojos de búho', desc: 'Llegar al nivel 4 de «Ojos de búho»', won: p => p.exercises.buho.level >= 4 },
     { id: 'relampago', icon: '⚡', name: 'Ojo relámpago', desc: 'Cumplir la meta con frases en «Palabras relámpago»', won: p => p.exercises.relampago.plays.some(x => x.level >= 5 && x.ok) },
-    { id: 'elefante', icon: '🧠', name: 'Memoria de elefante', desc: 'Recordar 6 palabras en «Palabras para recordar»', won: p => p.exercises.recuerda.plays.some(x => x.level >= 6 && x.ok) }
+    { id: 'elefante', icon: '🧠', name: 'Memoria de elefante', desc: 'Recordar 6 palabras en «Palabras para recordar»', won: p => p.exercises.recuerda.plays.some(x => x.level >= 6 && x.ok) },
+    { id: 'sentido', icon: '✅', name: 'Lectura veloz', desc: 'Cumplir la meta de «¿Tiene sentido?»', won: p => p.exercises.sentido.plays.some(x => x.ok) },
+    { id: 'diccionario', icon: '💬', name: 'Diccionario andante', desc: 'Cumplir la meta de «Palabras amigas» en el nivel 2 o más', won: p => p.exercises.amigas.plays.some(x => x.level >= 2 && x.ok) },
+    { id: 'frase', icon: '📝', name: 'Memoria de frase', desc: 'Armar de memoria frases de 8 palabras o más', won: p => p.exercises.frase.plays.some(x => x.level >= 4 && x.ok) },
+    { id: 'eco', icon: '🔊', name: 'Lectura en eco', desc: 'Leer un texto completo en eco con Lino', won: p => p.sessions.some(s => s.feel === 'eco') }
   ];
 
   // Las medallas ganadas se guardan: no se pierden aunque cambie el historial.
@@ -779,6 +805,16 @@
     S.pace = data.pace;
     const mode = data.settings.reread;
     const box = stage();
+    if (mode === 'eco') {
+      box.appendChild(el('p', 'eyebrow center-text', 'Lectura en eco'));
+      box.appendChild(el('p', 'pace-big', '🔊 → 🗣️'));
+      box.appendChild(el('p', 'muted center-text', hasVoice()
+        ? 'Lino lee una frase en voz alta y después tú la lees igual: con su ritmo y su entonación.'
+        : 'Este dispositivo no tiene voz en español: un adulto lee cada frase y después la lees tú.'));
+      actions(btn('btn-primary btn-xl', '▶ Empezar', () => runEcho()));
+      sb('Ahora leemos en eco: primero leo yo una frase y después la lees tú, igualito. ¡Escucha bien!');
+      return;
+    }
     box.appendChild(el('p', 'eyebrow center-text', mode === 'rsvp' ? 'Palabra a palabra' : 'Lectura con guía'));
     box.appendChild(el('p', 'pace-big', `${S.pace} ppm`));
     box.appendChild(el('p', 'muted center-text', mode === 'rsvp'
@@ -821,6 +857,43 @@
     const row = actions(pause);
     if (mode === 'rsvp') row.insertBefore(btn('btn-soft', '⟲ Frase', () => ctrl.back()), pause);
     sb('¡Sigue la lectura!', null, '');
+  }
+
+  // Lectura en eco dentro de la sesión (no cambia la velocidad de la guía).
+  function runEcho() {
+    const box = stage();
+    box.innerHTML = '';
+    const card = el('article', 'reading-card' + (kid() ? ' kid' : ''));
+    card.appendChild(el('h2', 'reading-title', `${S.text.emoji} ${S.text.title}`));
+    const body = el('div', 'reading-text');
+    card.appendChild(body);
+    box.appendChild(card);
+    const ctrl = L.eco(body, S.text.text, {
+      speak: text => { sb('🔊 Escucha…', null, ''); return speakWait(text); },
+      turn: (k, n) => echoTurn(box, k, n, msg => sb(msg, null, '')),
+      onEnd: () => {
+        S.stop = null;
+        S.feel = 'eco';
+        soundOk();
+        sb('¡Muy bien leído! Ahora vamos a recordar.', 'ok');
+        const old = box.querySelector('.stage-actions');
+        if (old) old.remove();
+        actions(btn('btn-primary btn-xl', 'Siguiente: recordar ▶', () => goStep(4, stepRecuerda)));
+      }
+    });
+    S.stop = () => { ctrl.stop(); hush(); };
+  }
+
+  // Turno de leer en eco: espera a que toque «Ya la leí».
+  function echoTurn(box, k, n, tell) {
+    return new Promise(resolve => {
+      const old = box.querySelector('.stage-actions');
+      if (old) old.remove();
+      tell(`🗣️ ¡Tu turno! Lee la frase amarilla en voz alta (${k + 1} de ${n}).`);
+      const row = el('div', 'stage-actions');
+      row.appendChild(btn('btn-success btn-xl', '✓ Ya la leí', () => { row.remove(); resolve(); }));
+      box.appendChild(row);
+    });
   }
 
   function askFeel() {
@@ -889,14 +962,13 @@
       S.stop = null;
       soundOk();
       sb(errors ? `¡Listo! Con ${errors} ${errors === 1 ? 'intento de más' : 'intentos de más'}.` : '¡Perfecto, en orden!', 'ok');
-      // Un día sí y otro no, también el juego de palabras para recordar.
-      const memoryDay = dayNumber(today()) % 2 === 1;
-      actions(btn('btn-primary btn-xl', memoryDay ? 'Siguiente: memoria ▶' : 'Terminar ▶', () => {
-        if (memoryDay) sessionExercise(E.BY_ID.recuerda, 'Un juego de memoria para terminar.', result => {
+      // Para terminar, el juego del día: memoria, comprensión o vocabulario.
+      const game = E.finalOfDay(dayNumber(today()));
+      actions(btn('btn-primary btn-xl', `Siguiente: ${game.name} ▶`, () => {
+        sessionExercise(game, 'Un juego más para terminar.', result => {
           S.memory = result;
           actions(btn('btn-primary btn-xl', 'Terminar ▶', finishSession));
         });
-        else finishSession();
       }));
     });
   }
@@ -991,20 +1063,28 @@
   function renderExercises() {
     const box = $('ex-list');
     box.innerHTML = '';
-    E.EXERCISES.forEach(def => {
-      const st = data.exercises[def.id];
-      const card = el('button', 'game-card');
-      card.type = 'button';
-      card.appendChild(el('span', 'game-icon', def.icon));
-      const info = el('span', 'game-info');
-      info.appendChild(el('span', 'game-name', def.name));
-      info.appendChild(el('span', 'game-short', def.short));
-      info.appendChild(el('span', 'game-record', `${def.skill} · Nivel ${def.levels.indexOf(st.level) + 1} de ${def.levels.length}`));
-      info.appendChild(masteryDots(st));
-      card.appendChild(info);
-      card.addEventListener('click', () => openExercise(def));
-      box.appendChild(card);
+    E.GROUPS.forEach(group => {
+      const head = el('div', 'games-group');
+      head.appendChild(el('span', 'games-group-name', `${group.icon} ${group.name}`));
+      head.appendChild(el('span', 'games-group-note', group.note));
+      box.appendChild(head);
+      E.EXERCISES.filter(def => def.group === group.id).forEach(def => box.appendChild(exerciseCard(def)));
     });
+  }
+
+  function exerciseCard(def) {
+    const st = data.exercises[def.id];
+    const card = el('button', 'game-card');
+    card.type = 'button';
+    card.appendChild(el('span', 'game-icon', def.icon));
+    const info = el('span', 'game-info');
+    info.appendChild(el('span', 'game-name', def.name));
+    info.appendChild(el('span', 'game-short', def.short));
+    info.appendChild(el('span', 'game-record', `${def.skill} · Nivel ${def.levels.indexOf(st.level) + 1} de ${def.levels.length}`));
+    info.appendChild(masteryDots(st));
+    card.appendChild(info);
+    card.addEventListener('click', () => openExercise(def));
+    return card;
   }
 
   function openExercise(def) {
@@ -1096,7 +1176,7 @@
         const reads = data.reads[t.id] || 0;
         info.appendChild(el('span', 'muted', `${level === 'A' ? 'Adultos' : `Nivel ${level}`} · ${L.countWords(t.text)} palabras · ${reads ? `leído ${reads} ${reads === 1 ? 'vez' : 'veces'}` : 'sin leer'}`));
         b.appendChild(info);
-        b.addEventListener('click', () => openReader(t.title, t.text, data.settings.reread, data.pace || targetWpm(data), data.settings.reread === 'rsvp' ? 1 : LEVELS[data.level].chunk));
+        b.addEventListener('click', () => openReader(t.title, t.text, data.settings.reread, data.pace || targetWpm(data), data.settings.reread === 'guia' ? LEVELS[data.level].chunk : 1));
         li.appendChild(b);
         list.appendChild(li);
       });
@@ -1127,12 +1207,13 @@
     $('reader-wpm').textContent = `${r.wpm} ppm`;
     $('reader-pause').textContent = '⏸️';
     $('reader-back').hidden = r.mode !== 'rsvp';
-    $('reader-controls').hidden = false;
+    $('reader-controls').hidden = r.mode === 'eco';
+    $('reader-wpm').hidden = r.mode === 'eco';
     const onEnd = () => {
       $('reader-controls').hidden = true;
       const end = el('div', 'reader-end center-text');
       end.appendChild(el('p', 'q-text', '¡Terminaste! 🎉'));
-      end.appendChild(el('p', 'muted', `${L.countWords(r.text)} palabras a ${r.wpm} ppm.`));
+      end.appendChild(el('p', 'muted', r.mode === 'eco' ? `${L.countWords(r.text)} palabras leídas en eco con Lino.` : `${L.countWords(r.text)} palabras a ${r.wpm} ppm.`));
       const row = el('div', 'row center');
       row.appendChild(btn('btn-primary', '↺ Otra vez', startReader));
       row.appendChild(btn('btn-soft', 'Salir', () => show('library')));
@@ -1140,7 +1221,19 @@
       box.appendChild(end);
       soundWin();
     };
-    if (r.mode === 'rsvp') {
+    if (r.mode === 'eco') {
+      const card = el('article', 'reading-card' + (kid() ? ' kid' : ''));
+      const body = el('div', 'reading-text');
+      card.appendChild(body);
+      box.appendChild(card);
+      const note = el('p', 'muted center-text echo-note', hasVoice() ? '🔊 Escucha a Lino y lee la frase después de él.' : 'Sin voz en español: un adulto lee cada frase primero.');
+      box.insertBefore(note, card);
+      r.ctrl = L.eco(body, r.text, {
+        speak: text => { note.textContent = '🔊 Escucha…'; return speakWait(text); },
+        turn: (k, n) => echoTurn(box, k, n, msg => { note.textContent = msg; }),
+        onEnd: () => { note.textContent = ''; onEnd(); }
+      });
+    } else if (r.mode === 'rsvp') {
       const word = el('div', 'rsvp-word');
       const bar = el('div', 'rsvp-bar');
       const fill = el('span');
@@ -1159,11 +1252,12 @@
 
   function stopReader() {
     if (reader && reader.ctrl) reader.ctrl.stop();
+    $('reader-wpm').hidden = false;
     reader = null;
   }
 
   function changeReaderWpm(factor) {
-    if (!reader) return;
+    if (!reader || !reader.ctrl.setWpm) return;
     reader.wpm = Math.max(40, Math.min(1000, Math.round((reader.wpm * factor) / 10) * 10));
     reader.ctrl.setWpm(reader.wpm);
     $('reader-wpm').textContent = `${reader.wpm} ppm`;
@@ -1172,7 +1266,7 @@
   $('reader-faster').addEventListener('click', () => changeReaderWpm(1.1));
   $('reader-back').addEventListener('click', () => { if (reader && reader.ctrl.back) { reader.ctrl.back(); $('reader-pause').textContent = '⏸️'; } });
   $('reader-pause').addEventListener('click', () => {
-    if (!reader) return;
+    if (!reader || !reader.ctrl.pause) return;
     if (reader.ctrl.paused) { reader.ctrl.resume(); $('reader-pause').textContent = '⏸️'; } else { reader.ctrl.pause(); $('reader-pause').textContent = '▶'; }
   });
   $('reader-exit').addEventListener('click', () => show('library'));
