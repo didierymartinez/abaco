@@ -110,6 +110,8 @@ Al cambiar archivos de una app, sube el número de versión en **dos lugares** p
 
 Cada app guarda sus propias copias sin conexión (`mi-abaco-…` y `mi-lectura-…`), y ninguna borra las de la otra.
 
+Si GitHub Pages no publica un cambio (el paso «Deploy to GitHub Pages» se queda en cola y falla por tiempo), abre *Actions → pages build and deployment → Re-run failed jobs*, o sube otro cambio a `main`.
+
 Con internet, la app siempre pide la versión actual. Al detectar una versión nueva se recarga sola, y sin internet usa la copia guardada.
 
 ## Estructura
